@@ -64,7 +64,7 @@ export default function DashboardPage() {
           Bienvenido, {user?.name || 'Usuario'}
         </h1>
         <p className="mt-1 text-sm text-neutral-500">
-          Panel principal de la plataforma Certify
+          Panel principal de la plataforma EduCert
         </p>
       </div>
 

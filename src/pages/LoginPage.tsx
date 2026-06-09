@@ -33,7 +33,7 @@ export default function LoginPage() {
             <Link to="/" className="inline-block mx-auto mb-4">
               <img src="/logo.png" alt="EduCert" className="h-20 w-60 object-contain" />
             </Link>
-            <h1 className="text-2xl font-bold text-neutral-900">EduCert</h1>
+            {/* <h1 className="text-2xl font-bold text-neutral-900">EduCert</h1> */}
             <p className="mt-1 text-sm text-neutral-500">Inicia sesión en tu cuenta</p>
           </div>
 
@@ -68,11 +68,12 @@ export default function LoginPage() {
         </div>
       </div>
       <div className="hidden flex-1 bg-gradient-to-br from-primary-600 to-primary-800 lg:flex items-center justify-center">
-        <div className="max-w-md text-center text-white px-8">
-          <img src="/logo.png" alt="EduCert" className="mx-auto mb-6 h-28 w-60 object-contain brightness-0 invert opacity-90" />
-          <h2 className="text-3xl font-bold">Plataforma de Certificación</h2>
-          <p className="mt-3 text-lg text-primary-200">
-            Gestiona cursos, usuarios y certificados de forma centralizada.
+        <div className="max-w-xl text-center text-white px-8">
+          <h2 className="text-4xl font-bold leading-tight">Formación Virtual para el Sector Salud</h2>
+          <p className="mt-4 text-lg text-primary-200 leading-relaxed">
+            Cursos 100% virtuales con certificación inmediata y verificación mediante código QR.
+            Capacítate desde cualquier dispositivo, a tu propio ritmo, con contenidos alineados
+            a la normativa vigente del sector salud.
           </p>
         </div>
       </div>
