@@ -16,6 +16,7 @@ interface DataTableProps<T> {
   data: T[]
   loading?: boolean
   onRowClick?: (item: T) => void
+  fixed?: boolean
 }
 
 function getSortValue<T>(item: T, col: Column<T>): unknown {
@@ -33,7 +34,7 @@ function compareValues(a: unknown, b: unknown, dir: 'asc' | 'desc'): number {
   return dir === 'asc' ? aStr.localeCompare(bStr, 'es') : bStr.localeCompare(aStr, 'es')
 }
 
-export default function DataTable<T>({ columns, data, loading, onRowClick }: DataTableProps<T>) {
+export default function DataTable<T>({ columns, data, loading, onRowClick, fixed }: DataTableProps<T>) {
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc' | null>(null)
 
@@ -72,7 +73,7 @@ export default function DataTable<T>({ columns, data, loading, onRowClick }: Dat
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full table-fixed text-left text-sm">
+      <table className={`w-full text-left text-sm ${fixed ? 'table-fixed' : ''}`}>
         <thead>
           <tr className="border-b border-neutral-200">
             {columns.map((col) => {

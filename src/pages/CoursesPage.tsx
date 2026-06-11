@@ -146,6 +146,7 @@ export default function CoursesPage() {
           <div className="space-y-4 p-6"><Skeleton count={5} className="h-10 w-full" /></div>
         ) : (
           <DataTable
+            fixed
             columns={columns}
             data={(courses as Course[]) || []}
             onRowClick={(c) => setExpandedId(expandedId === (c as Course).id ? null : (c as Course).id)}

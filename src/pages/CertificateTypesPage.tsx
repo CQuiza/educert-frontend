@@ -100,13 +100,13 @@ export default function CertificateTypesPage() {
   }
 
   const columns = [
-    { key: 'name', header: 'Nombre' },
-    { key: 'type', header: 'Tipo', render: (t: CertificateType) => <Badge variant="info">{t.type}</Badge> },
-    { key: 'hours', header: 'Horas' },
-    { key: 'validity_type', header: 'Vigencia', render: (t: CertificateType) => `${t.validity_value} ${t.validity_type}` },
-    { key: 'reference', header: 'Referencia' },
-    { key: 'actions' as string, header: 'Acciones', render: (t: CertificateType) => (
-      <div className="flex gap-2">
+    { key: 'name', header: 'Nombre', className: 'w-[60%]' },
+    { key: 'type', header: 'Tipo', className: 'text-center', render: (t: CertificateType) => <Badge variant="info">{t.type}</Badge> },
+    { key: 'hours', header: 'Horas', className: 'text-center' },
+    { key: 'validity_type', header: 'Vigencia', className: 'text-center', render: (t: CertificateType) => `${t.validity_value} ${t.validity_type}` },
+    { key: 'reference', header: 'Referencia', className: 'text-center' },
+    { key: 'actions' as string, header: 'Acciones', className: 'text-center', render: (t: CertificateType) => (
+      <div className="flex justify-center gap-2">
         <button onClick={(e) => { e.stopPropagation(); openEdit(t) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors">
           <Pencil className="h-4 w-4" />
         </button>
@@ -135,7 +135,7 @@ export default function CertificateTypesPage() {
           <div className="space-y-4 p-6"><Skeleton count={5} className="h-10 w-full" /></div>
         ) : (
           <>
-            <DataTable columns={columns} data={pageData} />
+            <DataTable fixed columns={columns} data={pageData} />
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         )}
