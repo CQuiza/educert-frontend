@@ -36,6 +36,7 @@ export default function CoursesPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Course | null>(null)
   const [form, setForm] = useState<FormData>(emptyForm)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
 
   const { data: courses, isLoading } = useCourses()
   const { data: fullCourse } = useCourse(editing?.id ?? 0)
@@ -100,9 +101,9 @@ export default function CoursesPage() {
   }
 
   const columns = [
-    { key: 'title', header: 'Título' },
-    { key: 'description', header: 'Descripción', render: (c: Course) => (
-      <span className="text-sm text-neutral-600 line-clamp-1">{c.description || '—'}</span>
+    { key: 'title', header: 'Título', className: 'w-[45%]' },
+    { key: 'description', header: 'Descripción', className: 'w-[25%]', render: (c: Course) => (
+      <span className={`text-sm text-neutral-600 block ${expandedId === c.id ? '' : 'truncate'}`}>{c.description || '—'}</span>
     )},
     { key: 'status', header: 'Estado', render: (c: Course) => (
       <Badge variant={courseStatusVariant(c.status)}>{c.status}</Badge>
@@ -144,7 +145,11 @@ export default function CoursesPage() {
         {isLoading ? (
           <div className="space-y-4 p-6"><Skeleton count={5} className="h-10 w-full" /></div>
         ) : (
-          <DataTable columns={columns} data={(courses as Course[]) || []} />
+          <DataTable
+            columns={columns}
+            data={(courses as Course[]) || []}
+            onRowClick={(c) => setExpandedId(expandedId === (c as Course).id ? null : (c as Course).id)}
+          />
         )}
       </Card>
 

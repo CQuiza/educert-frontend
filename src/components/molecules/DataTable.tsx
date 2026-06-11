@@ -8,6 +8,7 @@ interface Column<T> {
   render?: (item: T) => React.ReactNode
   sortable?: boolean
   sortValue?: (item: T) => unknown
+  className?: string
 }
 
 interface DataTableProps<T> {
@@ -71,7 +72,7 @@ export default function DataTable<T>({ columns, data, loading, onRowClick }: Dat
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
+      <table className="w-full table-fixed text-left text-sm">
         <thead>
           <tr className="border-b border-neutral-200">
             {columns.map((col) => {
@@ -82,7 +83,7 @@ export default function DataTable<T>({ columns, data, loading, onRowClick }: Dat
                 <th
                   key={colKey}
                   onClick={canSort ? () => handleSort(colKey) : undefined}
-                  className={`px-4 py-3 font-medium text-neutral-600 ${canSort ? 'cursor-pointer select-none hover:text-neutral-900' : ''}`}
+                  className={`px-4 py-3 font-medium text-neutral-600 ${canSort ? 'cursor-pointer select-none hover:text-neutral-900' : ''} ${col.className ?? ''}`}
                 >
                   <span className="inline-flex items-center gap-1">
                     {col.header}
@@ -108,7 +109,7 @@ export default function DataTable<T>({ columns, data, loading, onRowClick }: Dat
               }`}
             >
               {columns.map((col) => (
-                <td key={String(col.key)} className="px-4 py-3 text-neutral-900">
+                <td key={String(col.key)} className={`px-4 py-3 text-neutral-900 ${col.className ?? ''}`}>
                   {col.render ? col.render(item) : ((item as Record<string, unknown>)[col.key as string] as React.ReactNode) ?? '—'}
                 </td>
               ))}

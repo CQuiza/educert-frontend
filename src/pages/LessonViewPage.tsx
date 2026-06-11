@@ -1,12 +1,16 @@
+import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useLesson } from '../hooks/useLessons'
 import { useModule } from '../hooks/useModules'
 import { useCourse } from '../hooks/useCourses'
 import { useTasksByLesson } from '../hooks/useTasks'
-import { downloadTaskFile } from '../lib/download'
+import { useLessonFiles } from '../hooks/useLessonFiles'
+import { downloadTaskFile, downloadLessonFile } from '../lib/download'
+import { lessonFileService } from '../services/lessonFileService'
 import Card from '../components/molecules/Card'
 import Skeleton from '../components/atoms/Skeleton'
-import { ArrowLeft, ArrowUp, FileText, Video, Image, File, ClipboardList, ExternalLink } from 'lucide-react'
+import Button from '../components/atoms/Button'
+import { ArrowLeft, ArrowUp, FileText, Video, Image, File, ClipboardList, ExternalLink, X, Eye } from 'lucide-react'
 
 function getYoutubeEmbedUrl(url: string): string | null {
   try {
@@ -47,6 +51,35 @@ export default function LessonViewPage() {
   const { data: mod } = useModule(lesson?.module_id ?? 0)
   const { data: course } = useCourse(courseIdNum)
   const { data: tasks } = useTasksByLesson(lessonIdNum)
+  const { data: lessonFiles } = useLessonFiles(lessonIdNum)
+
+  const [selectedBlob, setSelectedBlob] = useState<{ url: string; id: number; name: string; mime: string | null } | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (selectedBlob) URL.revokeObjectURL(selectedBlob.url)
+    }
+  }, [selectedBlob])
+
+  async function handleView(fileId: number, name: string | null, mime: string | null) {
+    const fileUrl = lessonFileService.getFileUrl(lessonIdNum, fileId)
+    try {
+      const res = await fetch(fileUrl, { credentials: 'include' })
+      if (!res.ok) throw new Error()
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      setSelectedBlob({ url: blobUrl, id: fileId, name: name ?? 'archivo', mime })
+    } catch {
+      // silent
+    }
+  }
+
+  function handleCloseViewer() {
+    if (selectedBlob) {
+      URL.revokeObjectURL(selectedBlob.url)
+      setSelectedBlob(null)
+    }
+  }
 
   if (loadingLesson) return <div className="p-6 lg:p-8 space-y-4"><Skeleton count={4} className="h-8 w-full" /></div>
   if (!lesson) return <div className="p-6 lg:p-8"><p className="text-neutral-500">Lección no encontrada</p></div>
@@ -74,6 +107,70 @@ export default function LessonViewPage() {
             </div>
           )}
         </div>
+
+        {lessonFiles && lessonFiles.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3 text-sm font-medium text-neutral-600">
+              <FileText className="h-4 w-4 text-primary-500" />
+              Archivos
+            </div>
+            <div className="space-y-2">
+              {lessonFiles.map((f) => (
+                <div key={f.id} className="flex items-center justify-between rounded-lg border border-neutral-200 px-4 py-2.5">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <File className="h-4 w-4 text-neutral-400 shrink-0" />
+                    <span className="text-sm text-neutral-700 truncate">{f.original_filename}</span>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      onClick={() => handleView(f.id, f.original_filename, f.mime_type)}
+                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50 transition-colors"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      Ver
+                    </button>
+                    <button
+                      onClick={() => downloadLessonFile(lessonIdNum, f.id, f.original_filename ?? 'archivo')}
+                      className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-100 transition-colors"
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                      ↓
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {selectedBlob && (
+          <div className="mb-6 rounded-xl border border-neutral-200 bg-neutral-50 overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 bg-white">
+              <p className="text-sm font-medium text-neutral-700 truncate">{selectedBlob.name}</p>
+              <Button variant="ghost" size="sm" onClick={handleCloseViewer}>
+                <X className="h-4 w-4" />
+                Cerrar
+              </Button>
+            </div>
+            <div className="p-4">
+              {selectedBlob.mime?.startsWith('image/') ? (
+                <img src={selectedBlob.url} alt={selectedBlob.name} className="max-w-full rounded-lg" />
+              ) : selectedBlob.mime === 'application/pdf' ? (
+                <iframe src={selectedBlob.url} className="w-full h-[500px] rounded-lg border border-neutral-200" title={selectedBlob.name} />
+              ) : selectedBlob.mime?.startsWith('text/') ? (
+                <TextViewer blobUrl={selectedBlob.url} />
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-8 text-neutral-500">
+                  <p className="text-sm">Vista previa no disponible</p>
+                  <Button size="sm" onClick={() => downloadLessonFile(lessonIdNum, selectedBlob.id, selectedBlob.name)}>
+                    <ArrowUp className="h-4 w-4" />
+                    Descargar archivo
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {lesson.image_content_url && (() => {
           const gId = getGoogleDriveId(lesson.image_content_url)
@@ -196,5 +293,26 @@ export default function LessonViewPage() {
         </Link>
       </div>
     </div>
+  )
+}
+
+function TextViewer({ blobUrl }: { blobUrl: string }) {
+  const [text, setText] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch(blobUrl)
+      .then((r) => r.text())
+      .then(setText)
+      .catch(() => setText(null))
+  }, [blobUrl])
+
+  if (text === null) {
+    return <p className="text-sm text-neutral-400 py-4 text-center">Cargando...</p>
+  }
+
+  return (
+    <pre className="max-h-[400px] overflow-auto rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-800 whitespace-pre-wrap">
+      {text}
+    </pre>
   )
 }

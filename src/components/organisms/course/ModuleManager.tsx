@@ -14,9 +14,10 @@ import Skeleton from '../../atoms/Skeleton'
 import { getErrorMessage } from '../../../lib/error'
 import {
   ChevronDown, ChevronRight, Eye, FileText, Video, Image, File,
-  BookOpen, Plus, Pencil, Trash2, ClipboardList,
+  BookOpen, Plus, Pencil, Trash2, ClipboardList, FileIcon,
 } from 'lucide-react'
 import TaskManager from './TaskManager'
+import LessonFileManager from './LessonFileManager'
 import type { Module, Lesson, ModuleUpdate, LessonUpdate } from '../../../types'
 
 interface ModuleManagerProps {
@@ -81,6 +82,7 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'module' | 'lesson'; id: number } | null>(null)
 
   const [taskModalLessonId, setTaskModalLessonId] = useState<number | null>(null)
+  const [fileModalLessonId, setFileModalLessonId] = useState<number | null>(null)
 
   const modulesSorted = Array.isArray(modules) ? [...modules].sort((a, b) => a.order_index - b.order_index) : []
 
@@ -236,6 +238,9 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
                               <button onClick={(e) => { e.stopPropagation(); setTaskModalLessonId(lesson.id) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors" title="Tareas">
                                 <ClipboardList className="h-4 w-4" />
                               </button>
+                              <button onClick={(e) => { e.stopPropagation(); setFileModalLessonId(lesson.id) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors" title="Archivos">
+                                <FileIcon className="h-4 w-4" />
+                              </button>
                               <button onClick={(e) => { e.stopPropagation(); openLessonModal(mod.id, lesson) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors" title="Editar lección">
                                 <Pencil className="h-4 w-4" />
                               </button>
@@ -295,6 +300,7 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
       </Modal>
 
       <TaskManager lessonId={taskModalLessonId} onClose={() => setTaskModalLessonId(null)} />
+      <LessonFileManager lessonId={fileModalLessonId} onClose={() => setFileModalLessonId(null)} />
     </>
   )
 }
