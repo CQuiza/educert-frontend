@@ -31,8 +31,9 @@ api.interceptors.response.use(
     }
 
     if (!getRefreshToken()) {
-      localStorage.removeItem('user')
-      window.location.href = '/login'
+      localStorage.removeItem('_uid')
+      localStorage.removeItem('_role')
+      window.dispatchEvent(new CustomEvent('auth:redirect-login'))
       return Promise.reject(error)
     }
 
@@ -55,8 +56,9 @@ api.interceptors.response.use(
     } catch (refreshError) {
       processQueue(null, refreshError)
       setRefreshToken(null)
-      localStorage.removeItem('user')
-      window.location.href = '/login'
+      localStorage.removeItem('_uid')
+      localStorage.removeItem('_role')
+      window.dispatchEvent(new CustomEvent('auth:redirect-login'))
       return Promise.reject(refreshError)
     } finally {
       isRefreshing = false

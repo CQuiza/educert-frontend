@@ -26,10 +26,3 @@ export interface Course {
   updated_at: string
   status: CourseStatus
 }
-
-export interface CoursePublic {
-  id: number
-  title: string
-  description: string | null
-  status: CourseStatus
-}

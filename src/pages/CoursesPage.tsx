@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
 import { useCourses, useCourse, useCreateCourse, useUpdateCourse } from '../hooks/useCourses'
@@ -7,6 +7,7 @@ import { useCertificateTypes } from '../hooks/useCertificateTypes'
 import Card from '../components/molecules/Card'
 import DataTable from '../components/molecules/DataTable'
 import Modal from '../components/molecules/Modal'
+import SearchableSelect from '../components/molecules/SearchableSelect'
 import Button from '../components/atoms/Button'
 import Badge from '../components/atoms/Badge'
 import Input from '../components/atoms/Input'
@@ -100,6 +101,15 @@ export default function CoursesPage() {
     }
   }
 
+  const certTypeOptions = useMemo(() => [
+    { value: 0, label: 'Sin tipo', sublabel: '' },
+    ...(certTypes || []).map((t) => ({
+      value: t.id,
+      label: t.name,
+      sublabel: `${t.type} — ${t.hours} horas${t.reference ? ` · ${t.reference}` : ''}`,
+    })),
+  ], [certTypes])
+
   const columns = [
     { key: 'title', header: 'Título', className: 'w-[45%]' },
     { key: 'description', header: 'Descripción', className: 'w-[25%]', render: (c: Course) => (
@@ -176,15 +186,13 @@ export default function CoursesPage() {
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Tipo de certificado</label>
-            <select value={form.certificate_type_id} onChange={(e) => setForm({ ...form, certificate_type_id: Number(e.target.value) })} className="block w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
-              <option value={0}>Sin tipo</option>
-              {certTypes?.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
-            </select>
-          </div>
+          <SearchableSelect
+            label="Tipo de certificado"
+            options={certTypeOptions}
+            value={form.certificate_type_id}
+            onChange={(v) => setForm({ ...form, certificate_type_id: Number(v) })}
+            placeholder="Buscar tipo o referencia..."
+          />
           <div>
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">Estado</label>
             <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="block w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">

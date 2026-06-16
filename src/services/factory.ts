@@ -27,12 +27,3 @@ export function createCrudService<T, TCreate = T, TUpdate = T>(config: CrudConfi
     },
   }
 }
-
-export function createReadonlyService<T>(config: CrudConfig) {
-  return {
-    list: async (params?: Record<string, unknown>): Promise<T[]> => {
-      const { data } = await api.get<T[]>(config.basePath, { params })
-      return data
-    },
-  }
-}

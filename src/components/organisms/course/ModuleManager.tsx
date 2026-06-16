@@ -14,10 +14,11 @@ import Skeleton from '../../atoms/Skeleton'
 import { getErrorMessage } from '../../../lib/error'
 import {
   ChevronDown, ChevronRight, Eye, FileText, Video, Image, File,
-  BookOpen, Plus, Pencil, Trash2, ClipboardList, FileIcon,
+  BookOpen, Plus, Pencil, Trash2, ClipboardList, FileIcon, ClipboardCheck,
 } from 'lucide-react'
 import TaskManager from './TaskManager'
 import LessonFileManager from './LessonFileManager'
+import AssessmentManager from './AssessmentManager'
 import type { Module, Lesson, ModuleUpdate, LessonUpdate } from '../../../types'
 
 interface ModuleManagerProps {
@@ -83,6 +84,7 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
 
   const [taskModalLessonId, setTaskModalLessonId] = useState<number | null>(null)
   const [fileModalLessonId, setFileModalLessonId] = useState<number | null>(null)
+  const [assessmentModalModuleId, setAssessmentModalModuleId] = useState<number | null>(null)
 
   const modulesSorted = Array.isArray(modules) ? [...modules].sort((a, b) => a.order_index - b.order_index) : []
 
@@ -199,10 +201,13 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
                     </div>
                     {expanded ? <ChevronDown className="h-5 w-5 text-neutral-400" /> : <ChevronRight className="h-5 w-5 text-neutral-400" />}
                   </button>
-                  {canManage && (
+                  {canManage ? (
                     <div className="flex gap-1 pr-3">
                       <button onClick={(e) => { e.stopPropagation(); openLessonModal(mod.id) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors" title="Añadir lección">
                         <Plus className="h-4 w-4" />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); setAssessmentModalModuleId(mod.id) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors" title="Evaluación">
+                        <ClipboardCheck className="h-4 w-4" />
                       </button>
                       <button onClick={(e) => { e.stopPropagation(); openModModal(mod) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors" title="Editar módulo">
                         <Pencil className="h-4 w-4" />
@@ -210,6 +215,17 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
                       <button onClick={(e) => { e.stopPropagation(); setConfirmDelete({ type: 'module', id: mod.id }) }} className="rounded-lg p-1.5 text-neutral-400 hover:bg-danger-50 hover:text-danger-600 transition-colors" title="Eliminar módulo">
                         <Trash2 className="h-4 w-4" />
                       </button>
+                    </div>
+                  ) : (
+                    <div className="pr-3">
+                      <Link
+                        to={`/assessments/take/${mod.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors inline-flex"
+                        title="Evaluación"
+                      >
+                        <ClipboardCheck className="h-4 w-4" />
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -253,6 +269,19 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
                       ))
                     ) : (
                       <p className="px-5 py-4 text-sm text-neutral-500">Sin lecciones</p>
+                    )}
+                    {!canManage && (
+                      <Link
+                        to={`/assessments/take/${mod.id}`}
+                        className="group flex items-center gap-3 px-5 py-3 border-t border-neutral-100 hover:bg-neutral-50 transition-colors"
+                      >
+                        <ClipboardCheck className="h-4 w-4 text-primary-500 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-neutral-800">Evaluación del módulo</p>
+                          <p className="mt-0.5 text-xs text-neutral-500">Evaluación final del módulo</p>
+                        </div>
+                        <ClipboardCheck className="h-4 w-4 text-neutral-400 shrink-0" />
+                      </Link>
                     )}
                   </div>
                 )}
@@ -301,6 +330,7 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
 
       <TaskManager lessonId={taskModalLessonId} onClose={() => setTaskModalLessonId(null)} />
       <LessonFileManager lessonId={fileModalLessonId} onClose={() => setFileModalLessonId(null)} />
+      <AssessmentManager moduleId={assessmentModalModuleId} onClose={() => setAssessmentModalModuleId(null)} />
     </>
   )
 }

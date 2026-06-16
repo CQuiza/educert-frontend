@@ -1,5 +1,5 @@
 import api from './api'
-import type { Certificate, CertificateCreate, CertificateIssueRequest, CertificateUpdate } from '../types'
+import type { BatchIssueRequest, BatchIssueResponse, Certificate, CertificateIssueRequest, CertificateUpdate } from '../types'
 
 export const certificateService = {
   list: async (params?: Record<string, unknown>): Promise<Certificate[]> => {
@@ -9,11 +9,6 @@ export const certificateService = {
 
   getById: async (id: number): Promise<Certificate> => {
     const { data } = await api.get<Certificate>(`/certificates/${id}`)
-    return data
-  },
-
-  create: async (payload: CertificateCreate): Promise<Certificate> => {
-    const { data } = await api.post<Certificate>('/certificates', payload)
     return data
   },
 
@@ -29,6 +24,11 @@ export const certificateService = {
 
   remove: async (id: number): Promise<void> => {
     await api.delete(`/certificates/${id}`)
+  },
+
+  issueBatch: async (payload: BatchIssueRequest): Promise<BatchIssueResponse> => {
+    const { data } = await api.post<BatchIssueResponse>('/certificates/batch', payload)
+    return data
   },
 
   viewByUuid: async (uuid: string): Promise<Certificate> => {

@@ -49,6 +49,8 @@ export default function SearchPage() {
         } else {
           setError(axiosErr.response?.data?.detail || 'Error al consultar los certificados.')
         }
+      } else if (err instanceof Error) {
+        setError(err.message)
       } else {
         setError('Error de conexión. Intente nuevamente.')
       }

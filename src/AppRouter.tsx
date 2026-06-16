@@ -13,8 +13,11 @@ import CoursesPage from './pages/CoursesPage'
 import CertificateTypesPage from './pages/CertificateTypesPage'
 import CertificateAuditPage from './pages/CertificateAuditPage'
 import ManualPage from './pages/ManualPage'
+import ProgressPage from './pages/ProgressPage'
 import CourseDetailPage from './pages/CourseDetailPage'
 import LessonViewPage from './pages/LessonViewPage'
+import UserCertificatesPanel from './pages/UserCertificatesPanel'
+import AssessmentTakePage from './pages/AssessmentTakePage'
 import DashboardLayout from './components/organisms/DashboardLayout'
 import type { ReactNode } from 'react'
 import type { UserRole } from './types'
@@ -59,12 +62,15 @@ export default function AppRouter() {
       >
         <Route path="/dashboard" element={<RoleGuard roles={['superuser', 'admin', 'teacher']}><DashboardPage /></RoleGuard>} />
         <Route path="/users" element={<RoleGuard roles={['superuser', 'admin']}><UsersPage /></RoleGuard>} />
+        <Route path="/users/:userId/certificates" element={<RoleGuard roles={['superuser', 'admin']}><UserCertificatesPanel /></RoleGuard>} />
         <Route path="/certificates" element={<RoleGuard roles={['superuser', 'admin', 'teacher', 'student']}><CertificatesPage /></RoleGuard>} />
         <Route path="/courses" element={<RoleGuard roles={coursesRoles}><CoursesPage /></RoleGuard>} />
         <Route path="/courses/:courseId" element={<RoleGuard roles={coursesRoles}><CourseDetailPage /></RoleGuard>} />
         <Route path="/courses/:courseId/lessons/:lessonId" element={<RoleGuard roles={coursesRoles}><LessonViewPage /></RoleGuard>} />
         <Route path="/certificate-types" element={<RoleGuard roles={['superuser', 'admin']}><CertificateTypesPage /></RoleGuard>} />
         <Route path="/audit" element={<RoleGuard roles={['superuser', 'admin']}><CertificateAuditPage /></RoleGuard>} />
+        <Route path="/progress" element={<RoleGuard roles={['superuser', 'admin', 'teacher', 'student']}><ProgressPage /></RoleGuard>} />
+        <Route path="/assessments/take/:moduleId" element={<RoleGuard roles={['superuser', 'admin', 'teacher', 'student']}><AssessmentTakePage /></RoleGuard>} />
         <Route path="/manual" element={<RoleGuard roles={['superuser', 'admin']}><ManualPage /></RoleGuard>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

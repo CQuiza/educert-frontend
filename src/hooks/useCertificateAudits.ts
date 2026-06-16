@@ -4,8 +4,4 @@ import type { CertificateAudit, CertificateAuditCreate, CertificateAuditUpdate }
 
 export const {
   useList: useCertificateAudits,
-  useById: useCertificateAudit,
-  useCreate: useCreateCertificateAudit,
-  useUpdate: useUpdateCertificateAudit,
-  useRemove: useDeleteCertificateAudit,
 } = createCrudHooks<CertificateAudit, CertificateAuditCreate, CertificateAuditUpdate>({ queryKey: 'certificate-audit', service: certificateAuditService })

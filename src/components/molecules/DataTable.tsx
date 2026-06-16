@@ -103,7 +103,7 @@ export default function DataTable<T>({ columns, data, loading, onRowClick, fixed
         <tbody>
           {sorted.map((item, idx) => (
             <tr
-              key={(item as Record<string, unknown>).id as string ?? idx}
+              key={String((item as Record<string, unknown>).id ?? idx)}
               onClick={() => onRowClick?.(item)}
               className={`border-b border-neutral-100 transition-colors ${
                 onRowClick ? 'cursor-pointer hover:bg-neutral-50' : ''

@@ -39,13 +39,14 @@ export default function CertificatesPage() {
   const isAdmin = user?.role === 'superuser' || user?.role === 'admin'
 
   const [search, setSearch] = useState('')
-  const [, setPage] = useState(1)
+  const [_page, setPage] = useState(1)
   const [expandedUsers, setExpandedUsers] = useState<Set<number>>(new Set())
 
   const [issueModalOpen, setIssueModalOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string | number>('')
   const [selectedTypeId, setSelectedTypeId] = useState<string | number>('')
   const [issuedAt, setIssuedAt] = useState('')
+  const [validityExtension, setValidityExtension] = useState<number | null>(null)
 
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingCert, setEditingCert] = useState<Certificate | null>(null)
@@ -136,12 +137,14 @@ export default function CertificatesPage() {
         user_id: Number(selectedUserId),
         certificate_type_id: Number(selectedTypeId),
         issued_at: issuedAt || undefined,
+        validity_extension: validityExtension ?? undefined,
       })
       toast.success('Certificado emitido correctamente')
       setIssueModalOpen(false)
       setSelectedUserId('')
       setSelectedTypeId('')
       setIssuedAt('')
+      setValidityExtension(null)
     } catch (err) {
       toast.error(getErrorMessage(err))
     }
@@ -170,7 +173,7 @@ export default function CertificatesPage() {
       (certTypes || []).map((t) => ({
         value: t.id,
         label: t.name,
-        sublabel: `${t.type} — ${t.hours} horas`,
+        sublabel: `${t.type} — ${t.hours} horas${t.reference ? ` · ${t.reference}` : ''}`,
       })),
     [certTypes],
   )
@@ -388,7 +391,7 @@ export default function CertificatesPage() {
       </Card>
 
       {isAdmin && (
-        <Modal open={issueModalOpen} onClose={() => setIssueModalOpen(false)} title="Adicionar Nuevo Certificado">
+        <Modal open={issueModalOpen} onClose={() => { setIssueModalOpen(false); setValidityExtension(null) }} title="Adicionar Nuevo Certificado">
           <form onSubmit={handleIssueSubmit} className="space-y-4">
             <SearchableSelect
               label="Usuario"
@@ -407,6 +410,13 @@ export default function CertificatesPage() {
               required
             />
             <Input label="Fecha de emisión (opcional)" type="date" value={issuedAt} onChange={(e) => setIssuedAt(e.target.value)} />
+            <Input
+              label="Extensión de vigencia (años, opcional)"
+              type="number"
+              min={1}
+              value={validityExtension ?? ''}
+              onChange={(e) => setValidityExtension(e.target.value ? Number(e.target.value) : null)}
+            />
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="secondary" type="button" onClick={() => setIssueModalOpen(false)}>Cancelar</Button>
               <Button type="submit" loading={issueCert.isPending}>Emitir certificado</Button>

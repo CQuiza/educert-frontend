@@ -4,11 +4,6 @@ export interface Token {
   token_type: string
 }
 
-export interface TokenPayload {
-  sub: string
-  exp?: number
-}
-
 export interface LoginRequest {
   username: string
   password: string

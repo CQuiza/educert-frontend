@@ -12,6 +12,17 @@ import Skeleton from '../components/atoms/Skeleton'
 import Button from '../components/atoms/Button'
 import { ArrowLeft, ArrowUp, FileText, Video, Image, File, ClipboardList, ExternalLink, X, Eye } from 'lucide-react'
 
+function sanitizeUrl(url: string | null | undefined): string {
+  if (!url) return ''
+  try {
+    const u = new URL(url)
+    if (!['http:', 'https:'].includes(u.protocol)) return ''
+    return url
+  } catch {
+    return ''
+  }
+}
+
 function getYoutubeEmbedUrl(url: string): string | null {
   try {
     const u = new URL(url)
@@ -181,7 +192,7 @@ export default function LessonViewPage() {
                 <Image className="h-4 w-4 text-warning-500" />
                 Imagen
               </div>
-              <img src={src} alt={lesson.title} className="rounded-xl border border-neutral-200 max-w-full" />
+              <img src={sanitizeUrl(src)} alt={lesson.title} className="rounded-xl border border-neutral-200 max-w-full" />
             </div>
           )
         })()}
@@ -208,7 +219,7 @@ export default function LessonViewPage() {
                   />
                 </div>
               ) : (
-                <video controls src={lesson.video_content_url} className="rounded-xl border border-neutral-200 w-full" />
+                <video controls src={sanitizeUrl(lesson.video_content_url)} className="rounded-xl border border-neutral-200 w-full" />
               )}
             </div>
           )
@@ -225,12 +236,12 @@ export default function LessonViewPage() {
                 Archivo adjunto
               </div>
               <div className="flex flex-wrap gap-2">
-                <a href={dlUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors">
+                <a href={sanitizeUrl(dlUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors">
                   <ArrowUp className="h-4 w-4" />
                   Descargar archivo
                 </a>
                 {previewUrl && (
-                  <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors">
+                  <a href={sanitizeUrl(previewUrl)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors">
                     <FileText className="h-4 w-4" />
                     Vista previa
                   </a>

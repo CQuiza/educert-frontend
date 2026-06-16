@@ -17,13 +17,21 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 function getInitialUser(): User | null {
   const raw = localStorage.getItem('user')
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as User
-  } catch {
-    localStorage.removeItem('user')
-    return null
+  if (raw) {
+    try {
+      const u = JSON.parse(raw) as User
+      localStorage.setItem('_uid', String(u.id))
+      localStorage.setItem('_role', u.role)
+      localStorage.removeItem('user')
+      return u
+    } catch {
+      localStorage.removeItem('user')
+    }
   }
+  const id = localStorage.getItem('_uid')
+  const role = localStorage.getItem('_role')
+  if (!id || !role) return null
+  return { id: Number(id), role } as User
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -31,11 +39,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
 
   useEffect(() => {
+    function onRedirectLogin() {
+      setUser(null)
+      localStorage.removeItem('_uid')
+      localStorage.removeItem('_role')
+      setRefreshToken(null)
+      navigate('/login')
+    }
+    window.addEventListener('auth:redirect-login', onRedirectLogin)
     if (user) {
       authService.getMe<User>()
-        .then((u) => { setUser(u); localStorage.setItem('user', JSON.stringify(u)) })
-        .catch(() => { setUser(null); localStorage.removeItem('user'); setRefreshToken(null) })
+        .then((u) => { setUser(u); localStorage.setItem('_uid', String(u.id)); localStorage.setItem('_role', u.role) })
+        .catch(onRedirectLogin)
     }
+    return () => window.removeEventListener('auth:redirect-login', onRedirectLogin)
   }, [])
 
   const login = useCallback(
@@ -52,12 +69,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (u) {
-        localStorage.setItem('user', JSON.stringify(u))
+        localStorage.setItem('_uid', String(u.id))
+        localStorage.setItem('_role', u.role)
       }
       setUser(u)
 
       if (!u) {
-        navigate('/dashboard')
+        navigate('/login')
         return
       }
 
@@ -80,7 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // ignora errores de logout, igual limpiamos sesión local
     }
     setRefreshToken(null)
-    localStorage.removeItem('user')
+    localStorage.removeItem('_uid')
+    localStorage.removeItem('_role')
     setUser(null)
     navigate('/login')
   }, [navigate])

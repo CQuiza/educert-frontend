@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useAuth } from '../../../context/AuthContext'
 import { useLessonFiles, useCreateLessonFile, useUploadLessonFile, useDeleteLessonFile } from '../../../hooks/useLessonFiles'
@@ -22,6 +22,8 @@ export default function LessonFileManager({ lessonId, onClose }: LessonFileManag
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const mountedRef = useRef(true)
+  useEffect(() => { return () => { mountedRef.current = false } }, [])
 
   async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -42,7 +44,7 @@ export default function LessonFileManager({ lessonId, onClose }: LessonFileManag
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Error al subir archivo')
     } finally {
-      setUploading(false)
+      if (mountedRef.current) setUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }

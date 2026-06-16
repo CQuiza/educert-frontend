@@ -12,7 +12,8 @@ import Button from '../components/atoms/Button'
 import Badge from '../components/atoms/Badge'
 import Skeleton from '../components/atoms/Skeleton'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, GraduationCap, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Plus, Pencil, Trash2, GraduationCap, X, Award } from 'lucide-react'
 import { getErrorMessage } from '../lib/error'
 import { formatDate } from '../lib/dates'
 import { useAuth } from '../context/AuthContext'
@@ -110,7 +111,9 @@ export default function UsersPage() {
   const columns = [
     { key: 'name', header: 'Nombre', render: (u: User) => (
       <div>
-        <p className="font-medium text-neutral-900">{u.name} {u.first_last_name}</p>
+        <Link to={`/users/${u.id}/certificates`} className="font-medium text-neutral-900 hover:text-primary-600 transition-colors">
+          {u.name} {u.first_last_name}
+        </Link>
         <p className="text-xs text-neutral-500">{u.email}</p>
       </div>
     )},
