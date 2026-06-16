@@ -111,8 +111,8 @@ export default function CoursesPage() {
   ], [certTypes])
 
   const columns = [
-    { key: 'title', header: 'Título', className: 'w-[45%]' },
-    { key: 'description', header: 'Descripción', className: 'w-[25%]', render: (c: Course) => (
+    { key: 'title', header: 'Título' },
+    { key: 'description', header: 'Descripción', className: 'max-w-[250px]', render: (c: Course) => (
       <span className={`text-sm text-neutral-600 block ${expandedId === c.id ? '' : 'truncate'}`}>{c.description || '—'}</span>
     )},
     { key: 'status', header: 'Estado', render: (c: Course) => (
@@ -156,7 +156,6 @@ export default function CoursesPage() {
           <div className="space-y-4 p-6"><Skeleton count={5} className="h-10 w-full" /></div>
         ) : (
           <DataTable
-            fixed
             columns={columns}
             data={(courses as Course[]) || []}
             onRowClick={(c) => setExpandedId(expandedId === (c as Course).id ? null : (c as Course).id)}

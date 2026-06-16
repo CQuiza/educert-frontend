@@ -100,7 +100,7 @@ export default function CertificateTypesPage() {
   }
 
   const columns = [
-    { key: 'name', header: 'Nombre', className: 'w-[60%]' },
+    { key: 'name', header: 'Nombre' },
     { key: 'type', header: 'Tipo', className: 'text-center', render: (t: CertificateType) => <Badge variant="info">{t.type}</Badge> },
     { key: 'hours', header: 'Horas', className: 'text-center' },
     { key: 'validity_type', header: 'Vigencia', className: 'text-center', render: (t: CertificateType) => `${t.validity_value} ${t.validity_type}` },
@@ -135,7 +135,7 @@ export default function CertificateTypesPage() {
           <div className="space-y-4 p-6"><Skeleton count={5} className="h-10 w-full" /></div>
         ) : (
           <>
-            <DataTable fixed columns={columns} data={pageData} />
+            <DataTable columns={columns} data={pageData} />
             <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         )}
