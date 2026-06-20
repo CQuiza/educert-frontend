@@ -1,16 +1,21 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { toast } from 'sonner'
 import { useLesson } from '../hooks/useLessons'
 import { useModule } from '../hooks/useModules'
 import { useCourse } from '../hooks/useCourses'
 import { useTasksByLesson } from '../hooks/useTasks'
 import { useLessonFiles } from '../hooks/useLessonFiles'
+import { useSubmitTask, useMyTaskSubmission } from '../hooks/useTaskSubmissions'
+import { useAuth } from '../context/AuthContext'
 import { downloadTaskFile, downloadLessonFile } from '../lib/download'
+import { taskSubmissionService } from '../services/taskSubmissionService'
 import { lessonFileService } from '../services/lessonFileService'
 import Card from '../components/molecules/Card'
 import Skeleton from '../components/atoms/Skeleton'
 import Button from '../components/atoms/Button'
-import { ArrowLeft, ArrowUp, FileText, Video, Image, File, ClipboardList, ExternalLink, X, Eye } from 'lucide-react'
+import Badge from '../components/atoms/Badge'
+import { ArrowLeft, ArrowUp, FileText, Video, Image, File, ClipboardList, ExternalLink, X, Eye, Upload, Download, Loader2, AlertTriangle, AlertCircle } from 'lucide-react'
 
 function sanitizeUrl(url: string | null | undefined): string {
   if (!url) return ''
@@ -51,6 +56,153 @@ function getGoogleDriveId(url: string): string | null {
   } catch {
     return null
   }
+}
+
+function TaskSubmissionUpload({ taskId }: { taskId: number }) {
+  const { user } = useAuth()
+  const isStudent = user?.role === 'student'
+  const [file, setFile] = useState<File | null>(null)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [downloading, setDownloading] = useState<number | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const submitMutation = useSubmitTask()
+  const { data: submission, isLoading: loadingSub } = useMyTaskSubmission(taskId, { enabled: isStudent })
+
+  if (!isStudent) return null
+
+  async function handleSubmit() {
+    if (!file) return
+    submitMutation.mutate({ taskId, file }, {
+      onSuccess: () => {
+        setFile(null)
+        setShowConfirm(false)
+        if (fileRef.current) fileRef.current.value = ''
+        toast.success('Tarea cargada correctamente', {
+          description: 'Tu solución ha sido recibida.',
+        })
+      },
+      onError: (err) => {
+        setShowConfirm(false)
+        toast.error('Error al cargar la tarea', {
+          description: err instanceof Error ? err.message : 'Ocurrió un problema. Intenta de nuevo.',
+        })
+      },
+    })
+  }
+
+  if (loadingSub) return null
+
+  if (submission) {
+    return (
+      <div className="mt-3 pt-3 border-t border-neutral-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Upload className="h-4 w-4 text-success-500" />
+            <span className="text-xs font-medium text-success-700">Solución entregada</span>
+            <Badge variant="success">Entregado</Badge>
+          </div>
+          <button
+            onClick={async () => {
+              if (downloading === submission.id) return
+              setDownloading(submission.id)
+              try {
+                await taskSubmissionService.downloadFile(submission.id, submission.original_filename)
+              } catch {
+                // silent
+              } finally {
+                setDownloading(null)
+              }
+            }}
+            disabled={downloading === submission.id}
+            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {downloading === submission.id ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
+            {downloading === submission.id ? 'Descargando...' : 'Descargar'}
+          </button>
+        </div>
+        <p className="mt-1 text-[11px] text-neutral-500">
+          {submission.original_filename} · {new Date(submission.submitted_at).toLocaleDateString()}
+        </p>
+      </div>
+    )
+  }
+
+  if (showConfirm) {
+    return (
+      <div className="mt-3 pt-3 border-t border-neutral-100">
+        <div className="rounded-lg border border-warning-200 bg-warning-50 p-3 space-y-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-5 w-5 text-warning-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-warning-800">¿Confirmas el envío?</p>
+              <p className="mt-1 text-xs text-warning-700">
+                Solo tienes <strong>un intento</strong>. Una vez enviada no podrás modificar ni reemplazar tu solución.
+              </p>
+              {file && (
+                <p className="mt-1 text-xs text-warning-600">
+                  Archivo: {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={handleSubmit}
+              disabled={submitMutation.isPending}
+            >
+              {submitMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Upload className="h-3.5 w-3.5" />
+              )}
+              {submitMutation.isPending ? 'Enviando...' : 'Sí, enviar'}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowConfirm(false)}
+              disabled={submitMutation.isPending}
+            >
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-neutral-100">
+      <div className="flex items-start gap-2 mb-2">
+        <AlertCircle className="h-4 w-4 text-warning-500 shrink-0 mt-0.5" />
+        <p className="text-xs text-warning-700">
+          Solo puedes cargar un archivo PDF. <strong>Un solo intento.</strong>
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          className="block w-full text-xs text-neutral-600 file:mr-2 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary-700 hover:file:bg-primary-100"
+        />
+        <Button
+          size="sm"
+          onClick={() => setShowConfirm(true)}
+          disabled={!file}
+        >
+          <Upload className="h-3.5 w-3.5" />
+          Subir
+        </Button>
+      </div>
+    </div>
+  )
 }
 
 export default function LessonViewPage() {
@@ -289,6 +441,7 @@ export default function LessonViewPage() {
                         )}
                       </div>
                     </div>
+                    <TaskSubmissionUpload taskId={task.id} />
                   </div>
                 </Card>
               ))}
