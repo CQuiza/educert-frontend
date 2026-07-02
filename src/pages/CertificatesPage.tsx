@@ -43,6 +43,8 @@ export default function CertificatesPage() {
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [studentSearch, setStudentSearch] = useState('')
+  const [debouncedStudentSearch, setDebouncedStudentSearch] = useState('')
   const [page, setPage] = useState(1)
   const [certPage, setCertPage] = useState(1)
   const [expandedUsers, setExpandedUsers] = useState<Set<number>>(new Set())
@@ -51,6 +53,11 @@ export default function CertificatesPage() {
     const timer = setTimeout(() => setDebouncedSearch(search), 300)
     return () => clearTimeout(timer)
   }, [search])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedStudentSearch(studentSearch), 300)
+    return () => clearTimeout(timer)
+  }, [studentSearch])
 
   const [issueModalOpen, setIssueModalOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string | number>('')
@@ -66,7 +73,10 @@ export default function CertificatesPage() {
     { skip: (certPage - 1) * PAGE_SIZE, limit: PAGE_SIZE, search: debouncedSearch || undefined },
     { enabled: isAdmin },
   )
-  const { data: students } = useUsers({ role: 'student' }, { enabled: isAdmin })
+  const { data: students } = useUsers(
+    { role: 'student', search: debouncedStudentSearch || undefined, limit: 500 },
+    { enabled: isAdmin },
+  )
   const { data: plainCerts, isLoading: loadingPlain } = useCertificates(
     { skip: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE, search: debouncedSearch || undefined },
     { enabled: !isAdmin },
