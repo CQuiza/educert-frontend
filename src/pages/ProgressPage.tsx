@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useUsers } from '../hooks/useUsers'
+import { useUsers, useUser } from '../hooks/useUsers'
 import { useAllProgressSummaries } from '../hooks/useModuleAssessments'
 import { taskSubmissionService } from '../services/taskSubmissionService'
 import Card from '../components/molecules/Card'
@@ -22,23 +22,30 @@ export default function ProgressPage() {
   const isStaff = user && ['superuser', 'admin', 'teacher'].includes(user.role)
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedUserId, setSelectedUserId] = useState<number | null>(isStaff ? null : (user?.id ?? null))
   const [expandedCourses, setExpandedCourses] = useState<Set<number>>(new Set())
   const [downloading, setDownloading] = useState<number | null>(null)
 
-  const { data: allUsers } = useUsers(undefined, { enabled: !!isStaff })
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const { data: allUsers } = useUsers(
+    debouncedSearch ? { search: debouncedSearch, limit: 500 } : undefined,
+    { enabled: !!isStaff },
+  )
+  const selectedUser = useUser(selectedUserId ?? 0)
+
   const { data: summary, isLoading } = useAllProgressSummaries(selectedUserId ?? undefined)
 
-  const filteredUsers = useMemo(() => {
-    if (!allUsers || !searchQuery.trim()) return allUsers?.items ?? []
-    const q = searchQuery.toLowerCase()
-    return allUsers.items.filter(
-      (u) =>
-        u.name?.toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q) ||
-        u.identity_number?.includes(q),
-    )
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    return allUsers?.items ?? []
   }, [allUsers, searchQuery])
+
+  const selectedUserInfo = selectedUser.data || (selectedUserId && allUsers?.items.find((u) => u.id === selectedUserId)) || null
 
   const enriched = useMemo(() => {
     if (!summary) return null
@@ -88,9 +95,9 @@ export default function ProgressPage() {
           <div className="border-b border-neutral-200 px-4 py-3">
             <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Buscar alumno por nombre, email o identificación..." />
           </div>
-          {searchQuery && filteredUsers.length > 0 && (
+          {debouncedSearch && searchResults.length > 0 && (
             <div className="divide-y divide-neutral-100 max-h-48 overflow-y-auto">
-              {filteredUsers.map((u) => (
+              {searchResults.map((u) => (
                 <button
                   key={u.id}
                   onClick={() => { setSelectedUserId(u.id); setSearchQuery('') }}
@@ -118,13 +125,13 @@ export default function ProgressPage() {
         <h1 className="text-2xl font-bold text-neutral-900">Progreso</h1>
         <p className="mt-1 text-sm text-neutral-500">
           {isStaff && selectedUserId
-            ? `Progreso de ${allUsers?.items.find((u) => u.id === selectedUserId)?.name ?? 'Alumno'}`
+            ? `Progreso de ${selectedUserInfo?.name ?? 'Alumno'}`
             : 'Tu progreso en los cursos'}
         </p>
       </div>
 
       {isStaff && selectedUserId && (() => {
-        const su = allUsers?.items.find((u) => u.id === selectedUserId)
+        const su = selectedUserInfo
         return su ? (
           <Card className="mb-6">
             <div className="flex items-center justify-between">
