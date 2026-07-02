@@ -30,9 +30,9 @@ export default function ProgressPage() {
   const { data: summary, isLoading } = useAllProgressSummaries(selectedUserId ?? undefined)
 
   const filteredUsers = useMemo(() => {
-    if (!allUsers || !searchQuery.trim()) return allUsers ?? []
+    if (!allUsers || !searchQuery.trim()) return allUsers?.items ?? []
     const q = searchQuery.toLowerCase()
-    return allUsers.filter(
+    return allUsers.items.filter(
       (u) =>
         u.name?.toLowerCase().includes(q) ||
         u.email?.toLowerCase().includes(q) ||
@@ -118,13 +118,13 @@ export default function ProgressPage() {
         <h1 className="text-2xl font-bold text-neutral-900">Progreso</h1>
         <p className="mt-1 text-sm text-neutral-500">
           {isStaff && selectedUserId
-            ? `Progreso de ${allUsers?.find((u) => u.id === selectedUserId)?.name ?? 'Alumno'}`
+            ? `Progreso de ${allUsers?.items.find((u) => u.id === selectedUserId)?.name ?? 'Alumno'}`
             : 'Tu progreso en los cursos'}
         </p>
       </div>
 
       {isStaff && selectedUserId && (() => {
-        const su = allUsers?.find((u) => u.id === selectedUserId)
+        const su = allUsers?.items.find((u) => u.id === selectedUserId)
         return su ? (
           <Card className="mb-6">
             <div className="flex items-center justify-between">

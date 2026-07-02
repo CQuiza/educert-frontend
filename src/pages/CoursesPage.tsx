@@ -180,7 +180,7 @@ export default function CoursesPage() {
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">Docente</label>
             <select value={form.teacher_id} onChange={(e) => setForm({ ...form, teacher_id: Number(e.target.value) })} className="block w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
               <option value={0}>Sin docente</option>
-              {teachers?.filter((t) => t.role === 'teacher').map((t) => (
+              {teachers?.items.filter((t) => t.role === 'teacher').map((t) => (
                 <option key={t.id} value={t.id}>{t.name || t.email}</option>
               ))}
             </select>

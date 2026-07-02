@@ -56,9 +56,9 @@ export default function UserCertificatesPanel() {
 
   const filteredCertificates = useMemo(() => {
     if (!certificates) return []
-    if (!searchQuery.trim()) return certificates
+    if (!searchQuery.trim()) return certificates.items
     const q = searchQuery.toLowerCase()
-    return certificates.filter((cert) => {
+    return certificates.items.filter((cert) => {
       if (cert.certificate_type_id == null) return false
       const info = typeInfoMap[cert.certificate_type_id]
       if (!info) return false

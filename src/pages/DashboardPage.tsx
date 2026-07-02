@@ -16,21 +16,21 @@ export default function DashboardPage() {
   const { data: courses } = useCourses()
   const { data: certTypes } = useCertificateTypes(undefined, { enabled: isAdmin })
 
-  const activeCerts = certificates?.filter((c) => c.status === 'active').length ?? 0
-  const expiredCerts = certificates?.filter((c) => c.status === 'expired').length ?? 0
-  const revokedCerts = certificates?.filter((c) => c.status === 'revoked').length ?? 0
+  const activeCerts = certificates?.items.filter((c) => c.status === 'active').length ?? 0
+  const expiredCerts = certificates?.items.filter((c) => c.status === 'expired').length ?? 0
+  const revokedCerts = certificates?.items.filter((c) => c.status === 'revoked').length ?? 0
 
   const stats = [
     {
       label: 'Usuarios activos',
-      value: isAdmin ? (users?.length ?? '—') : '—',
+      value: isAdmin ? (users?.items.length ?? '—') : '—',
       icon: Users,
       color: 'text-primary-600 bg-primary-50',
       loading: false,
     },
     {
       label: 'Total certificados',
-      value: certificates?.length ?? '—',
+      value: certificates?.items.length ?? '—',
       icon: Award,
       color: 'text-success-600 bg-success-50',
       loading: false,
