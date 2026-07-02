@@ -214,117 +214,119 @@ export default function CertificatesPage() {
         {isLoading ? (
           <div className="space-y-4 p-6"><Skeleton count={5} className="h-10 w-full" /></div>
         ) : isAdmin ? (
-          <div className="divide-y divide-neutral-100">
-            {filteredGroups.length === 0 ? (
-              <p className="px-6 py-8 text-center text-sm text-neutral-400">No se encontraron certificados.</p>
-            ) : (
-              filteredGroups.map((group) => {
-                const expanded = expandedUsers.has(group.userId)
-                return (
-                  <div key={group.userId}>
-                    <button
-                      onClick={() => toggleUser(group.userId)}
-                      className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-neutral-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {expanded ? (
-                          <ChevronDown className="h-4 w-4 shrink-0 text-neutral-400" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 shrink-0 text-neutral-400" />
-                        )}
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-neutral-900 truncate">{group.userName}</p>
-                          <p className="text-xs text-neutral-500 truncate">{group.userEmail} · {group.userDoc}</p>
+          <>
+            <div className="divide-y divide-neutral-100">
+              {filteredGroups.length === 0 ? (
+                <p className="px-6 py-8 text-center text-sm text-neutral-400">No se encontraron certificados.</p>
+              ) : (
+                filteredGroups.map((group) => {
+                  const expanded = expandedUsers.has(group.userId)
+                  return (
+                    <div key={group.userId}>
+                      <button
+                        onClick={() => toggleUser(group.userId)}
+                        className="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-neutral-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {expanded ? (
+                            <ChevronDown className="h-4 w-4 shrink-0 text-neutral-400" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 shrink-0 text-neutral-400" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-neutral-900 truncate">{group.userName}</p>
+                            <p className="text-xs text-neutral-500 truncate">{group.userEmail} · {group.userDoc}</p>
+                          </div>
                         </div>
-                      </div>
-                      <Badge variant="default">{group.certificates.length} certificado{group.certificates.length !== 1 ? 's' : ''}</Badge>
-                    </button>
-                    {expanded && (
-                      <div className="border-t border-neutral-100">
-                        <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-neutral-100 bg-neutral-50/50">
-                              <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">Tipo</th>
-                              {user?.role === 'superuser' && <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">Referencia</th>}
-                              <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">Estado</th>
-                              <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">Emitido</th>
-                              <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">Expira</th>
-                              <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">UUID</th>
-                              <th className="px-6 py-2.5 text-right text-xs font-medium text-neutral-500 uppercase">Acciones</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-neutral-100">
-                            {group.certificates.map((cert) => (
-                              <tr key={cert.id} className="hover:bg-neutral-50/50 transition-colors">
-                                <td className="px-6 py-3 text-neutral-700">
-                                  {cert.certificate_type_id != null
-                                    ? typeMap[cert.certificate_type_id] || `ID: ${cert.certificate_type_id}`
-                                    : '—'}
-                                </td>
-                                {user?.role === 'superuser' && (
-                                  <td className="px-6 py-3 text-neutral-600">
+                        <Badge variant="default">{group.certificates.length} certificado{group.certificates.length !== 1 ? 's' : ''}</Badge>
+                      </button>
+                      {expanded && (
+                        <div className="border-t border-neutral-100">
+                          <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-neutral-100 bg-neutral-50/50">
+                                <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">Tipo</th>
+                                {user?.role === 'superuser' && <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">Referencia</th>}
+                                <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">Estado</th>
+                                <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">Emitido</th>
+                                <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">Expira</th>
+                                <th className="px-6 py-2.5 text-left text-xs font-medium text-neutral-500 uppercase">UUID</th>
+                                <th className="px-6 py-2.5 text-right text-xs font-medium text-neutral-500 uppercase">Acciones</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-neutral-100">
+                              {group.certificates.map((cert) => (
+                                <tr key={cert.id} className="hover:bg-neutral-50/50 transition-colors">
+                                  <td className="px-6 py-3 text-neutral-700">
                                     {cert.certificate_type_id != null
-                                      ? referenceMap[cert.certificate_type_id] || '—'
+                                      ? typeMap[cert.certificate_type_id] || `ID: ${cert.certificate_type_id}`
                                       : '—'}
                                   </td>
-                                )}
-                                <td className="px-6 py-3">
-                                  <Badge variant={certificateStatusVariant(cert.status)}>{cert.status}</Badge>
-                                </td>
-                                <td className="px-6 py-3 text-neutral-600">
-                                  {formatDate(cert.issued_at)}
-                                </td>
-                                <td className="px-6 py-3 text-neutral-600">
-                                  {!cert.expires_at ? '—' : formatDate(cert.expires_at)}
-                                </td>
-                                <td className="px-6 py-3">
-                                  <span
-                                    className="font-mono text-xs text-neutral-500 cursor-pointer hover:text-primary-600 transition-colors"
-                                    title={cert.unique_id}
-                                    onClick={() => navigator.clipboard.writeText(cert.unique_id)}
-                                  >
-                                    {cert.unique_id.slice(0, 8)}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-3">
-                                  <div className="flex justify-end gap-1">
-                                    <button
-                                      onClick={() => window.open(`${config.apiUrl}/certificates/view/${cert.unique_id}`, '_blank')}
-                                      className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors"
-                                      title="Ver PDF"
+                                  {user?.role === 'superuser' && (
+                                    <td className="px-6 py-3 text-neutral-600">
+                                      {cert.certificate_type_id != null
+                                        ? referenceMap[cert.certificate_type_id] || '—'
+                                        : '—'}
+                                    </td>
+                                  )}
+                                  <td className="px-6 py-3">
+                                    <Badge variant={certificateStatusVariant(cert.status)}>{cert.status}</Badge>
+                                  </td>
+                                  <td className="px-6 py-3 text-neutral-600">
+                                    {formatDate(cert.issued_at)}
+                                  </td>
+                                  <td className="px-6 py-3 text-neutral-600">
+                                    {!cert.expires_at ? '—' : formatDate(cert.expires_at)}
+                                  </td>
+                                  <td className="px-6 py-3">
+                                    <span
+                                      className="font-mono text-xs text-neutral-500 cursor-pointer hover:text-primary-600 transition-colors"
+                                      title={cert.unique_id}
+                                      onClick={() => navigator.clipboard.writeText(cert.unique_id)}
                                     >
-                                      <FileText className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => window.open(`${config.apiUrl}/certificates/view/${cert.unique_id}/qr`, '_blank')}
-                                      className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors"
-                                      title="Ver QR"
-                                    >
-                                      <QrCode className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => openEdit(cert)}
-                                      className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors"
-                                      title="Editar"
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                                      {cert.unique_id.slice(0, 8)}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-3">
+                                    <div className="flex justify-end gap-1">
+                                      <button
+                                        onClick={() => window.open(`${config.apiUrl}/certificates/view/${cert.unique_id}`, '_blank')}
+                                        className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors"
+                                        title="Ver PDF"
+                                      >
+                                        <FileText className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => window.open(`${config.apiUrl}/certificates/view/${cert.unique_id}/qr`, '_blank')}
+                                        className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors"
+                                        title="Ver QR"
+                                      >
+                                        <QrCode className="h-4 w-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => openEdit(cert)}
+                                        className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors"
+                                        title="Editar"
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
-          <Pagination page={certPage} totalPages={certifiedUsers ? Math.ceil(certifiedUsers.total / PAGE_SIZE) : 0} onPageChange={setCertPage} />
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+            <Pagination page={certPage} totalPages={certifiedUsers ? Math.ceil(certifiedUsers.total / PAGE_SIZE) : 0} onPageChange={setCertPage} />
+          </>
         ) : (
           <>
             <div className="overflow-x-auto">
