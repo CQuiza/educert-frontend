@@ -1,6 +1,5 @@
 import { useAuth } from '../context/AuthContext'
 import { useDashboardStats } from '../hooks/useDashboard'
-import { useCourses } from '../hooks/useCourses'
 import Card from '../components/molecules/Card'
 import Skeleton from '../components/atoms/Skeleton'
 import { Users, Award, GraduationCap, FileCheck, CheckCircle, XCircle, Clock } from 'lucide-react'
@@ -10,7 +9,6 @@ export default function DashboardPage() {
   const isStaff = user?.role === 'superuser' || user?.role === 'admin' || user?.role === 'teacher'
 
   const { data: statsData, isLoading } = useDashboardStats({ enabled: isStaff })
-  const { data: courses } = useCourses()
 
   const stats = [
     {
