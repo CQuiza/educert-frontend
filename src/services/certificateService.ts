@@ -2,8 +2,8 @@ import api from './api'
 import type { BatchIssueRequest, BatchIssueResponse, Certificate, CertificateIssueRequest, CertificateUpdate } from '../types'
 
 export const certificateService = {
-  list: async (params?: Record<string, unknown>): Promise<Certificate[]> => {
-    const { data } = await api.get<Certificate[]>('/certificates', { params })
+  list: async (params?: Record<string, unknown>): Promise<{ items: Certificate[]; total: number }> => {
+    const { data } = await api.get<{ items: Certificate[]; total: number }>('/certificates', { params })
     return data
   },
 

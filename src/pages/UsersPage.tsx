@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '../hooks/useUsers'
 import { useEnrollments, useCreateEnrollment, useDeleteEnrollment } from '../hooks/useEnrollments'
 import { useCourses } from '../hooks/useCourses'
@@ -28,16 +28,26 @@ export default function UsersPage() {
   const isSuperuser = user?.role === 'superuser'
 
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
   const [formUser, setFormUser] = useState<User | null | undefined>(undefined)
 
-  const { data: users, isLoading } = useUsers()
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const { data: users, isLoading } = useUsers({
+    skip: (page - 1) * PAGE_SIZE,
+    limit: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+  })
   const createUser = useCreateUser()
   const deleteUser = useDeleteUser()
   const updateUser = useUpdateUser(formUser?.id ?? 0)
 
   const [enrollUserId, setEnrollUserId] = useState<number | null>(null)
-  const enrollUser = users?.find((u) => u.id === enrollUserId)
+  const enrollUser = users?.items?.find((u) => u.id === enrollUserId)
   const { data: enrollments, isLoading: loadingEnroll } = useEnrollments(
     { user_id: enrollUserId ?? 0 },
     { enabled: enrollUserId !== null },
@@ -64,16 +74,8 @@ export default function UsersPage() {
     [courses, enrolledCourseIds],
   )
 
-  const filtered = useMemo(() => {
-    if (!users) return []
-    const q = search.toLowerCase()
-    return users.filter(
-      (u) => u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.identity_number?.includes(q),
-    )
-  }, [users, search])
-
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const pageData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const totalPages = users ? Math.ceil(users.total / PAGE_SIZE) : 0
+  const pageData = users?.items ?? []
 
   function openCreate() {
     setFormUser(null)

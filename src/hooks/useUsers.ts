@@ -20,10 +20,10 @@ export function useUser(id: number) {
   })
 }
 
-export function useCertifiedUsers(options?: { enabled?: boolean }) {
+export function useCertifiedUsers(params?: Record<string, unknown>, options?: { enabled?: boolean }) {
   return useQuery({
-    queryKey: [...QUERY_KEY, 'certified'],
-    queryFn: () => userService.getCertified(),
+    queryKey: [...QUERY_KEY, 'certified', params],
+    queryFn: () => userService.getCertified(params),
     ...options,
   })
 }

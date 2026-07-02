@@ -2,8 +2,8 @@ import api from './api'
 import type { User, UserCreate, UserUpdate, UserWithCertificates } from '../types'
 
 export const userService = {
-  list: async (params?: Record<string, unknown>): Promise<User[]> => {
-    const { data } = await api.get<User[]>('/users', { params })
+  list: async (params?: Record<string, unknown>): Promise<{ items: User[]; total: number }> => {
+    const { data } = await api.get<{ items: User[]; total: number }>('/users', { params })
     return data
   },
 
@@ -12,8 +12,8 @@ export const userService = {
     return data
   },
 
-  getCertified: async (): Promise<UserWithCertificates[]> => {
-    const { data } = await api.get<UserWithCertificates[]>('/users/certified')
+  getCertified: async (params?: Record<string, unknown>): Promise<{ items: UserWithCertificates[]; total: number }> => {
+    const { data } = await api.get<{ items: UserWithCertificates[]; total: number }>('/users/certified', { params })
     return data
   },
 

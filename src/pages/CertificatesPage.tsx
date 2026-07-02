@@ -7,6 +7,7 @@ import { useCertificateTypes } from '../hooks/useCertificateTypes'
 import Card from '../components/molecules/Card'
 import SearchBar from '../components/molecules/SearchBar'
 import SearchableSelect from '../components/molecules/SearchableSelect'
+import Pagination from '../components/molecules/Pagination'
 import Modal from '../components/molecules/Modal'
 import Button from '../components/atoms/Button'
 import Badge from '../components/atoms/Badge'
@@ -18,6 +19,8 @@ import { formatDate } from '../lib/dates'
 import { certificateStatusVariant } from '../lib/statusVariant'
 import { config } from '../config'
 import type { Certificate } from '../types'
+
+const PAGE_SIZE = 15
 
 interface CertRow {
   cert: Certificate
@@ -39,7 +42,8 @@ export default function CertificatesPage() {
   const isAdmin = user?.role === 'superuser' || user?.role === 'admin'
 
   const [search, setSearch] = useState('')
-  const [_page, setPage] = useState(1)
+  const [page, setPage] = useState(1)
+  const [certPage, setCertPage] = useState(1)
   const [expandedUsers, setExpandedUsers] = useState<Set<number>>(new Set())
 
   const [issueModalOpen, setIssueModalOpen] = useState(false)
@@ -52,9 +56,15 @@ export default function CertificatesPage() {
   const [editingCert, setEditingCert] = useState<Certificate | null>(null)
   const [editStatus, setEditStatus] = useState('')
 
-  const { data: certifiedUsers, isLoading: loadingCertified } = useCertifiedUsers({ enabled: isAdmin })
+  const { data: certifiedUsers, isLoading: loadingCertified } = useCertifiedUsers(
+    { skip: (certPage - 1) * PAGE_SIZE, limit: PAGE_SIZE },
+    { enabled: isAdmin },
+  )
   const { data: students } = useUsers({ role: 'student' }, { enabled: isAdmin })
-  const { data: plainCerts, isLoading: loadingPlain } = useCertificates({ enabled: !isAdmin })
+  const { data: plainCerts, isLoading: loadingPlain } = useCertificates(
+    { skip: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE },
+    { enabled: !isAdmin },
+  )
   const { data: certTypes } = useCertificateTypes()
   const issueCert = useIssueCertificate()
   const updateCert = useUpdateCertificate(editingCert?.id ?? 0)
@@ -72,8 +82,8 @@ export default function CertificatesPage() {
   }, [certTypes])
 
   const userGroups: UserGroup[] = useMemo(() => {
-    if (!isAdmin || !certifiedUsers) return []
-    return certifiedUsers
+    if (!isAdmin || !certifiedUsers?.items) return []
+    return certifiedUsers.items
       .filter((cu) => cu.certificates && cu.certificates.length > 0)
       .map((cu) => ({
         userId: cu.id,
@@ -152,15 +162,15 @@ export default function CertificatesPage() {
 
   // Non-admin: flat view
   const flatRows: CertRow[] = useMemo(() => {
-    if (!isAdmin && plainCerts) {
-      return plainCerts.map((c) => ({ cert: c }))
+    if (!isAdmin && plainCerts?.items) {
+      return plainCerts.items.map((c) => ({ cert: c }))
     }
     return []
   }, [isAdmin, plainCerts])
 
   const studentOptions = useMemo(
     () =>
-      (students || []).map((s) => ({
+      (students?.items || []).map((s) => ({
         value: s.id,
         label: `${s.name || ''} ${s.first_last_name || ''}`.trim() || s.email,
         sublabel: `${s.identity_type} ${s.identity_number} — ${s.email}`,
@@ -197,7 +207,7 @@ export default function CertificatesPage() {
         <div className="border-b border-neutral-200 px-4 py-3">
           <SearchBar
             value={search}
-            onChange={(v) => { setSearch(v); setPage(1); setExpandedUsers(new Set()) }}
+            onChange={(v) => { setSearch(v); setPage(1); setCertPage(1); setExpandedUsers(new Set()) }}
             placeholder="Buscar por estudiante, documento o UUID..."
           />
         </div>
@@ -314,6 +324,7 @@ export default function CertificatesPage() {
               })
             )}
           </div>
+          <Pagination page={certPage} totalPages={certifiedUsers ? Math.ceil(certifiedUsers.total / PAGE_SIZE) : 0} onPageChange={setCertPage} />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -386,6 +397,7 @@ export default function CertificatesPage() {
             {flatRows.length === 0 && (
               <p className="px-6 py-8 text-center text-sm text-neutral-400">No se encontraron certificados.</p>
             )}
+            <Pagination page={page} totalPages={plainCerts ? Math.ceil(plainCerts.total / PAGE_SIZE) : 0} onPageChange={setPage} />
           </>
         )}
       </Card>
