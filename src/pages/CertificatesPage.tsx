@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
 import { useCertifiedUsers, useUsers } from '../hooks/useUsers'
@@ -42,9 +42,15 @@ export default function CertificatesPage() {
   const isAdmin = user?.role === 'superuser' || user?.role === 'admin'
 
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(1)
   const [certPage, setCertPage] = useState(1)
   const [expandedUsers, setExpandedUsers] = useState<Set<number>>(new Set())
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
 
   const [issueModalOpen, setIssueModalOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string | number>('')
@@ -57,12 +63,12 @@ export default function CertificatesPage() {
   const [editStatus, setEditStatus] = useState('')
 
   const { data: certifiedUsers, isLoading: loadingCertified } = useCertifiedUsers(
-    { skip: (certPage - 1) * PAGE_SIZE, limit: PAGE_SIZE },
+    { skip: (certPage - 1) * PAGE_SIZE, limit: PAGE_SIZE, search: debouncedSearch || undefined },
     { enabled: isAdmin },
   )
   const { data: students } = useUsers({ role: 'student' }, { enabled: isAdmin })
   const { data: plainCerts, isLoading: loadingPlain } = useCertificates(
-    { skip: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE },
+    { skip: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE, search: debouncedSearch || undefined },
     { enabled: !isAdmin },
   )
   const { data: certTypes } = useCertificateTypes()
