@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useUser } from '../hooks/useUsers'
 import { useCertificates } from '../hooks/useCertificates'
@@ -12,11 +12,19 @@ import Badge from '../components/atoms/Badge'
 import Button from '../components/atoms/Button'
 import Skeleton from '../components/atoms/Skeleton'
 import BatchCertificateModal from '../components/organisms/BatchCertificateModal'
+import RenewCertificateModal from '../components/organisms/RenewCertificateModal'
+import EditCertificateStatusModal from '../components/organisms/EditCertificateStatusModal'
 import { toast } from 'sonner'
-import { ArrowLeft, Plus, FileText, QrCode, GraduationCap, X } from 'lucide-react'
+import { ArrowLeft, Plus, FileText, QrCode, GraduationCap, X, RefreshCw, Pencil, Filter, Check } from 'lucide-react'
 import { formatDate } from '../lib/dates'
 import { getErrorMessage } from '../lib/error'
-import type { Certificate, Course } from '../types'
+import type { Certificate, CertificateStatus, Course } from '../types'
+
+const STATUS_OPTIONS: { value: CertificateStatus; label: string }[] = [
+  { value: 'active', label: 'Activo' },
+  { value: 'revoked', label: 'Revocado' },
+  { value: 'expired', label: 'Expirado' },
+]
 
 export default function UserCertificatesPanel() {
   const { userId } = useParams<{ userId: string }>()
@@ -32,6 +40,35 @@ export default function UserCertificatesPanel() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [batchModalOpen, setBatchModalOpen] = useState(false)
+  const [renewCert, setRenewCert] = useState<Certificate | null>(null)
+  const [editCert, setEditCert] = useState<Certificate | null>(null)
+
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false)
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<CertificateStatus>>(new Set())
+  const filterRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setStatusFilterOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  function toggleStatus(status: CertificateStatus) {
+    setSelectedStatuses((prev) => {
+      const next = new Set(prev)
+      if (next.has(status)) next.delete(status)
+      else next.add(status)
+      return next
+    })
+  }
+
+  function clearStatuses() {
+    setSelectedStatuses(new Set())
+  }
 
   const typeInfoMap = useMemo(() => {
     if (!certTypes) return {} as Record<number, { name: string; reference: string | null }>
@@ -56,15 +93,17 @@ export default function UserCertificatesPanel() {
 
   const filteredCertificates = useMemo(() => {
     if (!certificates) return []
-    if (!searchQuery.trim()) return certificates.items
+    if (!searchQuery.trim() && selectedStatuses.size === 0) return certificates.items
     const q = searchQuery.toLowerCase()
     return certificates.items.filter((cert) => {
+      if (selectedStatuses.size > 0 && !selectedStatuses.has(cert.status)) return false
+      if (!searchQuery.trim()) return true
       if (cert.certificate_type_id == null) return false
       const info = typeInfoMap[cert.certificate_type_id]
       if (!info) return false
       return info.name.toLowerCase().includes(q) || (info.reference && info.reference.toLowerCase().includes(q))
     })
-  }, [certificates, searchQuery, typeInfoMap])
+  }, [certificates, searchQuery, selectedStatuses, typeInfoMap])
 
   function getCertTypeName(cert: Certificate): string {
     if (cert.certificate_type_id == null) return '—'
@@ -170,6 +209,21 @@ export default function UserCertificatesPanel() {
             <QrCode className="h-4 w-4" />
           </a>
         )}
+        <button
+          onClick={() => setEditCert(cert)}
+          className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors"
+          title="Editar estado"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => setRenewCert(cert)}
+          disabled={cert.status === 'revoked'}
+          className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors disabled:pointer-events-none disabled:opacity-30"
+          title={cert.status === 'revoked' ? 'No renovable (revocado)' : 'Renovar certificado'}
+        >
+          <RefreshCw className="h-4 w-4" />
+        </button>
         {!cert.pdf_url && !cert.qr_code_url && (
           <span className="text-xs text-neutral-400">—</span>
         )}
@@ -208,8 +262,50 @@ export default function UserCertificatesPanel() {
       </div>
 
       <Card padding={false}>
-        <div className="border-b border-neutral-200 px-4 py-3">
-          <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Buscar por tipo o referencia..." />
+        <div className="flex items-center gap-2 border-b border-neutral-200 px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Buscar por tipo o referencia..." />
+          </div>
+          <div className="relative" ref={filterRef}>
+            <button
+              onClick={() => setStatusFilterOpen(!statusFilterOpen)}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors ${
+                statusFilterOpen
+                  ? 'border-primary-500 bg-primary-50 text-primary-700'
+                  : 'border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50'
+              }`}
+            >
+              <Filter className="h-4 w-4" />
+              Estado
+              {selectedStatuses.size > 0 && (
+                <Badge variant="info">{selectedStatuses.size}</Badge>
+              )}
+            </button>
+            {statusFilterOpen && (
+              <div className="absolute right-0 z-50 mt-1 w-52 rounded-lg border border-neutral-200 bg-white p-1 shadow-lg">
+                {STATUS_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => toggleStatus(opt.value)}
+                    className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                  >
+                    {opt.label}
+                    {selectedStatuses.has(opt.value) && (
+                      <Check className="h-4 w-4 text-primary-600" />
+                    )}
+                  </button>
+                ))}
+                <div className="border-t border-neutral-100 mt-1 pt-1">
+                  <button
+                    onClick={clearStatuses}
+                    className="w-full rounded-md px-3 py-2 text-left text-sm text-neutral-500 hover:bg-neutral-50 transition-colors"
+                  >
+                    Todos
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         {loadingCerts ? (
           <div className="space-y-4 p-6"><Skeleton count={5} className="h-10 w-full" /></div>
@@ -227,6 +323,22 @@ export default function UserCertificatesPanel() {
         open={batchModalOpen}
         onClose={() => setBatchModalOpen(false)}
       />
+
+      {renewCert && (
+        <RenewCertificateModal
+          open
+          onClose={() => setRenewCert(null)}
+          certificate={renewCert}
+        />
+      )}
+
+      {editCert && (
+        <EditCertificateStatusModal
+          open
+          onClose={() => setEditCert(null)}
+          certificate={editCert}
+        />
+      )}
     </div>
   )
 }

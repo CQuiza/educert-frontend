@@ -20,7 +20,26 @@ export default function BatchCertificateModal({ userId, open, onClose }: BatchCe
   const [search, setSearch] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [issuedAt, setIssuedAt] = useState('')
+  const [validityExtension, setValidityExtension] = useState<number | null>(null)
+  const [hours, setHours] = useState<number | null>(null)
   const [result, setResult] = useState<{ issued: number; errors: { ct: string; error: string }[] } | null>(null)
+
+  // Reset al abrir con ajuste-durante-render (sin useEffect → evita
+  // react-hooks/set-state-in-effect)
+  const [prevOpen, setPrevOpen] = useState(open)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
+    if (open) {
+      setSearch('')
+      setSelectedIds(new Set())
+      setIssuedAt('')
+      setValidityExtension(null)
+      setHours(null)
+      setResult(null)
+    }
+  }
+
+  const singleType = selectedIds.size === 1
 
   const filtered = useMemo(() => {
     if (!certTypes) return []
@@ -59,6 +78,9 @@ export default function BatchCertificateModal({ userId, open, onClose }: BatchCe
         user_id: userId,
         certificate_type_ids: Array.from(selectedIds),
         issued_at: issuedAt || null,
+        // Los overrides solo aplican a la emisión de un único tipo
+        validity_extension: selectedIds.size === 1 ? (validityExtension ?? undefined) : undefined,
+        hours: selectedIds.size === 1 ? (hours ?? undefined) : undefined,
       })
       setResult({
         issued: res.issued.length,
@@ -85,6 +107,8 @@ export default function BatchCertificateModal({ userId, open, onClose }: BatchCe
     setSearch('')
     setSelectedIds(new Set())
     setIssuedAt('')
+    setValidityExtension(null)
+    setHours(null)
     setResult(null)
     onClose()
   }
@@ -97,6 +121,27 @@ export default function BatchCertificateModal({ userId, open, onClose }: BatchCe
           type="date"
           value={issuedAt}
           onChange={(e) => setIssuedAt(e.target.value)}
+        />
+
+        <Input
+          label="Extensión de vigencia (años, opcional)"
+          type="number"
+          min={1}
+          disabled={!singleType}
+          value={validityExtension ?? ''}
+          onChange={(e) => setValidityExtension(e.target.value ? Number(e.target.value) : null)}
+        />
+        {!singleType && (
+          <p className="-mt-2 text-xs text-neutral-400">Solo disponible al seleccionar un único tipo de certificado.</p>
+        )}
+
+        <Input
+          label="Número de horas (opcional)"
+          type="number"
+          min={1}
+          disabled={!singleType}
+          value={hours ?? ''}
+          onChange={(e) => setHours(e.target.value ? Number(e.target.value) : null)}
         />
 
         <div>

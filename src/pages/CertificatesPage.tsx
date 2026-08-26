@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
 import { useCertifiedUsers, useUsers } from '../hooks/useUsers'
-import { useCertificates, useUpdateCertificate, useIssueCertificate } from '../hooks/useCertificates'
+import { useCertificates, useIssueCertificate } from '../hooks/useCertificates'
 import { useCertificateTypes } from '../hooks/useCertificateTypes'
+import { userService } from '../services/userService'
 import Card from '../components/molecules/Card'
 import SearchBar from '../components/molecules/SearchBar'
 import SearchableSelect from '../components/molecules/SearchableSelect'
@@ -13,7 +14,9 @@ import Button from '../components/atoms/Button'
 import Badge from '../components/atoms/Badge'
 import Input from '../components/atoms/Input'
 import Skeleton from '../components/atoms/Skeleton'
-import { Plus, Pencil, FileText, QrCode, ChevronDown, ChevronRight } from 'lucide-react'
+import RenewCertificateModal from '../components/organisms/RenewCertificateModal'
+import EditCertificateStatusModal from '../components/organisms/EditCertificateStatusModal'
+import { Plus, Pencil, FileText, QrCode, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
 import { getErrorMessage } from '../lib/error'
 import { formatDate } from '../lib/dates'
 import { certificateStatusVariant } from '../lib/statusVariant'
@@ -58,10 +61,10 @@ export default function CertificatesPage() {
   const [selectedTypeId, setSelectedTypeId] = useState<string | number>('')
   const [issuedAt, setIssuedAt] = useState('')
   const [validityExtension, setValidityExtension] = useState<number | null>(null)
+  const [hours, setHours] = useState<number | null>(null)
 
-  const [editModalOpen, setEditModalOpen] = useState(false)
-  const [editingCert, setEditingCert] = useState<Certificate | null>(null)
-  const [editStatus, setEditStatus] = useState('')
+  const [editCert, setEditCert] = useState<Certificate | null>(null)
+  const [renewCert, setRenewCert] = useState<Certificate | null>(null)
 
   const { data: certifiedUsers, isLoading: loadingCertified } = useCertifiedUsers(
     { skip: (certPage - 1) * PAGE_SIZE, limit: PAGE_SIZE, search: debouncedSearch || undefined },
@@ -77,7 +80,6 @@ export default function CertificatesPage() {
   )
   const { data: certTypes } = useCertificateTypes()
   const issueCert = useIssueCertificate()
-  const updateCert = useUpdateCertificate(editingCert?.id ?? 0)
 
   const isLoading = isAdmin ? loadingCertified : loadingPlain
 
@@ -131,22 +133,7 @@ export default function CertificatesPage() {
   }
 
   function openEdit(c: Certificate) {
-    setEditingCert(c)
-    setEditStatus(c.status)
-    setEditModalOpen(true)
-  }
-
-  async function handleEditSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!editingCert) return
-    try {
-      await updateCert.mutateAsync({ status: editStatus as Certificate['status'] })
-      toast.success('Certificado actualizado correctamente')
-      setEditModalOpen(false)
-      setEditingCert(null)
-    } catch (err) {
-      toast.error(getErrorMessage(err))
-    }
+    setEditCert(c)
   }
 
   async function handleIssueSubmit(e: React.FormEvent) {
@@ -158,6 +145,7 @@ export default function CertificatesPage() {
         certificate_type_id: Number(selectedTypeId),
         issued_at: issuedAt || undefined,
         validity_extension: validityExtension ?? undefined,
+        hours: hours ?? undefined,
       })
       toast.success('Certificado emitido correctamente')
       setIssueModalOpen(false)
@@ -165,6 +153,7 @@ export default function CertificatesPage() {
       setSelectedTypeId('')
       setIssuedAt('')
       setValidityExtension(null)
+      setHours(null)
     } catch (err) {
       toast.error(getErrorMessage(err))
     }
@@ -186,6 +175,19 @@ export default function CertificatesPage() {
         sublabel: `${s.identity_type} ${s.identity_number} — ${s.email}`,
       })),
     [students],
+  )
+
+  // Búsqueda server-side: los primeros 500 no cubren toda la base de datos
+  const searchStudents = useCallback(
+    async (query: string): Promise<{ value: number; label: string; sublabel: string }[]> => {
+      const res = await userService.list({ role: 'student', limit: 50, search: query })
+      return (res.items || []).map((s) => ({
+        value: s.id,
+        label: `${s.name || ''} ${s.first_last_name || ''}`.trim() || s.email,
+        sublabel: `${s.identity_type} ${s.identity_number} — ${s.email}`,
+      }))
+    },
+    [],
   )
 
   const certTypeOptions = useMemo(
@@ -315,6 +317,14 @@ export default function CertificatesPage() {
                                         <QrCode className="h-4 w-4" />
                                       </button>
                                       <button
+                                        onClick={() => setRenewCert(cert)}
+                                        disabled={cert.status === 'revoked'}
+                                        className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors disabled:pointer-events-none disabled:opacity-30"
+                                        title={cert.status === 'revoked' ? 'No renovable (revocado)' : 'Renovar certificado'}
+                                      >
+                                        <RefreshCw className="h-4 w-4" />
+                                      </button>
+                                      <button
                                         onClick={() => openEdit(cert)}
                                         className="rounded-lg p-1.5 text-neutral-400 hover:bg-neutral-100 hover:text-primary-600 transition-colors"
                                         title="Editar"
@@ -415,7 +425,7 @@ export default function CertificatesPage() {
       </Card>
 
       {isAdmin && (
-        <Modal open={issueModalOpen} onClose={() => { setIssueModalOpen(false); setValidityExtension(null) }} title="Adicionar Nuevo Certificado">
+        <Modal open={issueModalOpen} onClose={() => { setIssueModalOpen(false); setValidityExtension(null); setHours(null) }} title="Adicionar Nuevo Certificado">
           <form onSubmit={handleIssueSubmit} className="space-y-4">
             <SearchableSelect
               label="Usuario"
@@ -423,6 +433,7 @@ export default function CertificatesPage() {
               value={selectedUserId}
               onChange={setSelectedUserId}
               placeholder="Buscar estudiante por nombre o identidad..."
+              onRemoteSearch={searchStudents}
               required
             />
             <SearchableSelect
@@ -441,6 +452,13 @@ export default function CertificatesPage() {
               value={validityExtension ?? ''}
               onChange={(e) => setValidityExtension(e.target.value ? Number(e.target.value) : null)}
             />
+            <Input
+              label="Número de horas (opcional)"
+              type="number"
+              min={1}
+              value={hours ?? ''}
+              onChange={(e) => setHours(e.target.value ? Number(e.target.value) : null)}
+            />
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="secondary" type="button" onClick={() => setIssueModalOpen(false)}>Cancelar</Button>
               <Button type="submit" loading={issueCert.isPending}>Emitir certificado</Button>
@@ -449,21 +467,21 @@ export default function CertificatesPage() {
         </Modal>
       )}
 
-      <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)} title="Actualizar certificado">
-        <form onSubmit={handleEditSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Estado</label>
-            <select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="block w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500" required>
-              <option value="active">Activo</option>
-              <option value="revoked">Revocado</option>
-            </select>
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setEditModalOpen(false)}>Cancelar</Button>
-            <Button type="submit" loading={updateCert.isPending}>Guardar</Button>
-          </div>
-        </form>
-      </Modal>
+      {renewCert && (
+        <RenewCertificateModal
+          open
+          onClose={() => setRenewCert(null)}
+          certificate={renewCert}
+        />
+      )}
+
+      {editCert && (
+        <EditCertificateStatusModal
+          open
+          onClose={() => setEditCert(null)}
+          certificate={editCert}
+        />
+      )}
     </div>
   )
 }

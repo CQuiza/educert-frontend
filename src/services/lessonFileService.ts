@@ -28,4 +28,24 @@ export const lessonFileService = {
     const base = `${config.apiUrl}/lessons/${lessonId}/files/${fileId}/file`
     return download ? `${base}?download=true` : base
   },
+
+  // Flujo de 2 pasos (metadato + multipart) por archivo; fuente única usada
+  // tanto por el modal de edición como por la creación de lecciones.
+  uploadFilesToLesson: async (lessonId: number, files: File[]): Promise<{ uploaded: string[]; failed: string[] }> => {
+    const uploaded: string[] = []
+    const failed: string[] = []
+    for (const file of files) {
+      try {
+        const created = await lessonFileService.create(lessonId, {
+          original_filename: file.name,
+          mime_type: file.type || undefined,
+        })
+        await lessonFileService.uploadFile(lessonId, created.id, file)
+        uploaded.push(file.name)
+      } catch {
+        failed.push(file.name)
+      }
+    }
+    return { uploaded, failed }
+  },
 }

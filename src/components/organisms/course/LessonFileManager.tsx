@@ -1,11 +1,11 @@
-import { useRef, useState, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useAuth } from '../../../context/AuthContext'
 import { useLessonFiles, useCreateLessonFile, useUploadLessonFile, useDeleteLessonFile } from '../../../hooks/useLessonFiles'
 import { lessonFileService } from '../../../services/lessonFileService'
 import Modal from '../../molecules/Modal'
-import Button from '../../atoms/Button'
-import { Trash2, Upload, FileIcon } from 'lucide-react'
+import FileDropzone from '../../molecules/FileDropzone'
+import { Trash2, FileIcon } from 'lucide-react'
 
 interface LessonFileManagerProps {
   lessonId: number | null
@@ -20,33 +20,31 @@ export default function LessonFileManager({ lessonId, onClose }: LessonFileManag
   const uploadFile = useUploadLessonFile()
   const deleteFile = useDeleteLessonFile()
 
-  const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const mountedRef = useRef(true)
   useEffect(() => { return () => { mountedRef.current = false } }, [])
 
-  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file || !lessonId) return
+  async function handleFiles(selected: File[]) {
+    if (!lessonId || selected.length === 0) return
 
     setUploading(true)
-    try {
-      const created = await createFile.mutateAsync({
-        lessonId,
-        data: {
-          original_filename: file.name,
-          mime_type: file.type || undefined,
-          order_index: (files?.length ?? 0) + 1,
-        },
-      })
-      await uploadFile.mutateAsync({ lessonId, fileId: created.id, file })
-      toast.success('Archivo subido correctamente')
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Error al subir archivo')
-    } finally {
-      if (mountedRef.current) setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
+    for (const file of selected) {
+      try {
+        const created = await createFile.mutateAsync({
+          lessonId,
+          data: {
+            original_filename: file.name,
+            mime_type: file.type || undefined,
+            order_index: (files?.length ?? 0) + 1,
+          },
+        })
+        await uploadFile.mutateAsync({ lessonId, fileId: created.id, file })
+        toast.success(`Archivo "${file.name}" subido correctamente`)
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : `Error al subir "${file.name}"`)
+      }
     }
+    if (mountedRef.current) setUploading(false)
   }
 
   return (
@@ -95,16 +93,12 @@ export default function LessonFileManager({ lessonId, onClose }: LessonFileManag
 
         {canManage && (
           <div className="border-t border-neutral-200 pt-4">
-            <input
-              ref={fileInputRef}
-              type="file"
-              onChange={handleFileSelected}
-              className="hidden"
+            <FileDropzone
+              multiple
+              disabled={uploading}
+              onFiles={handleFiles}
+              hint="JPG, PNG, PDF, DOCX, PPTX, XLSX · máx. 50 MB por archivo"
             />
-            <Button onClick={() => fileInputRef.current?.click()} loading={uploading}>
-              <Upload className="h-4 w-4" />
-              Subir archivo
-            </Button>
           </div>
         )}
       </div>

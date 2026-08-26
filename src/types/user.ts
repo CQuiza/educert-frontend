@@ -8,7 +8,7 @@ export interface UserBase {
   role: UserRole
   identity_type: IdentityType
   identity_number: string
-  phone_number: string
+  phone_number?: string
   is_active: boolean
 }
 
@@ -42,6 +42,7 @@ export interface User {
   created_at: string
   updated_at: string
   is_active: boolean
+  certificates_regenerated?: number
 }
 
 import type { Certificate } from './certificate'

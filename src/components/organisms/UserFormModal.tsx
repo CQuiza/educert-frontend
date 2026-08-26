@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Modal from '../molecules/Modal'
 import Button from '../atoms/Button'
 import Input from '../atoms/Input'
@@ -35,25 +35,32 @@ interface UserFormModalProps {
 export default function UserFormModal({ isOpen, onClose, user, roleOptions, isSaving, onSubmit }: UserFormModalProps) {
   const [form, setForm] = useState<FormData>(emptyForm)
 
-  useEffect(() => {
-    if (!isOpen) return
-    if (user) {
-      setForm({
-        email: user.email,
-        password: '',
-        name: user.name || '',
-        first_last_name: user.first_last_name || '',
-        second_last_name: user.second_last_name || '',
-        role: user.role,
-        identity_type: user.identity_type,
-        identity_number: user.identity_number,
-        phone_number: user.phone_number,
-        is_active: user.is_active,
-      })
-    } else {
-      setForm(emptyForm)
+  // Reset del formulario al abrir con ajuste-durante-render (sin useEffect →
+  // evita react-hooks/set-state-in-effect)
+  const [prevOpen, setPrevOpen] = useState(isOpen)
+  const [prevUser, setPrevUser] = useState(user)
+  if (isOpen !== prevOpen || user !== prevUser) {
+    setPrevOpen(isOpen)
+    setPrevUser(user)
+    if (isOpen) {
+      setForm(
+        user
+          ? {
+              email: user.email,
+              password: '',
+              name: user.name || '',
+              first_last_name: user.first_last_name || '',
+              second_last_name: user.second_last_name || '',
+              role: user.role,
+              identity_type: user.identity_type,
+              identity_number: user.identity_number,
+              phone_number: user.phone_number,
+              is_active: user.is_active,
+            }
+          : emptyForm,
+      )
     }
-  }, [isOpen, user])
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -66,7 +73,8 @@ export default function UserFormModal({ isOpen, onClose, user, roleOptions, isSa
       role: form.role,
       identity_type: form.identity_type,
       identity_number: form.identity_number,
-      phone_number: form.phone_number,
+      // Vacío → se omite la clave: el backend auto-asigna (create) o conserva (edit)
+      phone_number: form.phone_number.trim() || undefined,
       is_active: form.is_active,
     }
     if (mode === 'edit') {
@@ -111,7 +119,7 @@ export default function UserFormModal({ isOpen, onClose, user, roleOptions, isSa
         </div>
         <div className="grid grid-cols-2 gap-4">
           <Input label="Número ID" value={form.identity_number} onChange={(e) => setForm({ ...form, identity_number: e.target.value })} required />
-          <Input label="Teléfono" value={form.phone_number} onChange={(e) => setForm({ ...form, phone_number: e.target.value })} required />
+          <Input label="Teléfono (opcional)" value={form.phone_number} onChange={(e) => setForm({ ...form, phone_number: e.target.value })} />
         </div>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500" />

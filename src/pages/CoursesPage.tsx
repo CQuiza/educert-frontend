@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
 import { useCourses, useCourse, useCreateCourse, useUpdateCourse } from '../hooks/useCourses'
@@ -49,7 +49,11 @@ export default function CoursesPage() {
   const createCourse = useCreateCourse()
   const updateCourse = useUpdateCourse(editing?.id ?? 0)
 
-  useEffect(() => {
+  // Sincroniza el formulario con el curso completo al editarlo, con
+  // ajuste-durante-render (sin useEffect → evita react-hooks/set-state-in-effect)
+  const [prevFullCourse, setPrevFullCourse] = useState(fullCourse)
+  if (fullCourse !== prevFullCourse) {
+    setPrevFullCourse(fullCourse)
     if (fullCourse) {
       setForm({
         title: fullCourse.title,
@@ -59,7 +63,7 @@ export default function CoursesPage() {
         certificate_type_id: fullCourse.certificate_type_id ?? 0,
       })
     }
-  }, [fullCourse])
+  }
 
   function openCreate() {
     setEditing(null)

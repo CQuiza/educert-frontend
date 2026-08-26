@@ -6,15 +6,18 @@ import { useModules } from '../../../hooks/useModules'
 import { useLessons } from '../../../hooks/useLessons'
 import { moduleService } from '../../../services/moduleService'
 import { lessonService } from '../../../services/lessonService'
+import { lessonFileService } from '../../../services/lessonFileService'
 import Card from '../../molecules/Card'
 import Modal from '../../molecules/Modal'
 import Button from '../../atoms/Button'
 import Input from '../../atoms/Input'
 import Skeleton from '../../atoms/Skeleton'
+import FileDropzone from '../../molecules/FileDropzone'
 import { getErrorMessage } from '../../../lib/error'
+import { formatFileSize } from '../../../lib/lessonFiles'
 import {
   ChevronDown, ChevronRight, Eye, FileText, Video, Image, File,
-  BookOpen, Plus, Pencil, Trash2, ClipboardList, FileIcon, ClipboardCheck,
+  BookOpen, Plus, Pencil, Trash2, ClipboardList, FileIcon, ClipboardCheck, X,
 } from 'lucide-react'
 import TaskManager from './TaskManager'
 import LessonFileManager from './LessonFileManager'
@@ -79,6 +82,12 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null)
   const [lessonForm, setLessonForm] = useState<LessonForm>(emptyLessonForm)
   const [lessonModuleId, setLessonModuleId] = useState(0)
+  // Archivos pendientes al crear la lección (el backend exige que la lección
+  // exista antes de subir archivos); en edición se usan los del editor.
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  // Cubre creación + subida de archivos de una sola vez (el isPending de la
+  // mutación solo cubre el POST).
+  const [lessonSubmitting, setLessonSubmitting] = useState(false)
 
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'module' | 'lesson'; id: number } | null>(null)
 
@@ -123,6 +132,7 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
       file_content_url: lesson.file_content_url ?? '',
       order_index: lesson.order_index,
     } : emptyLessonForm)
+    setPendingFiles([])
     setLessonModal(true)
   }
 
@@ -136,19 +146,38 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
       file_content_url: lessonForm.file_content_url || null,
       order_index: lessonForm.order_index,
     }
+    setLessonSubmitting(true)
     try {
       if (editingLesson) {
         await updateLesson.mutateAsync({ id: editingLesson.id, data: payload })
         toast.success('Lección actualizada correctamente')
       } else {
-        await createLesson.mutateAsync({ module_id: lessonModuleId, ...payload })
-        toast.success('Lección creada correctamente')
+        const created = await createLesson.mutateAsync({ module_id: lessonModuleId, ...payload })
+        if (pendingFiles.length > 0) {
+          toast.info(`Subiendo ${pendingFiles.length} archivo${pendingFiles.length !== 1 ? 's' : ''} a la lección...`)
+          const { uploaded, failed } = await lessonFileService.uploadFilesToLesson(
+            created.id, pendingFiles,
+          )
+          if (uploaded.length > 0) {
+            toast.success(`Lección creada correctamente · ${uploaded.length} archivo${uploaded.length !== 1 ? 's' : ''} subido${uploaded.length !== 1 ? 's' : ''}`)
+          } else {
+            toast.success('Lección creada correctamente')
+          }
+          if (failed.length > 0) {
+            toast.warning(`No se pudo${failed.length !== 1 ? 'ron' : ''} subir: ${failed.join(', ')}. Podés reintentar desde "Editar lección".`)
+          }
+        } else {
+          toast.success('Lección creada correctamente')
+        }
       }
       setLessonModal(false)
       setEditingLesson(null)
       setLessonForm(emptyLessonForm)
+      setPendingFiles([])
     } catch (err) {
       toast.error(getErrorMessage(err))
+    } finally {
+      setLessonSubmitting(false)
     }
   }
 
@@ -302,7 +331,7 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
         </form>
       </Modal>
 
-      <Modal open={lessonModal} onClose={() => setLessonModal(false)} title={editingLesson ? 'Editar lección' : 'Nueva lección'}>
+      <Modal open={lessonModal} onClose={() => { setLessonModal(false); setPendingFiles([]) }} title={editingLesson ? 'Editar lección' : 'Nueva lección'}>
         <form onSubmit={handleLessonSubmit} className="space-y-4">
           <Input label="Título" value={lessonForm.title} onChange={(e) => setLessonForm({ ...lessonForm, title: e.target.value })} required />
           <div>
@@ -313,9 +342,44 @@ export default function ModuleManager({ courseId, canManage }: ModuleManagerProp
           <Input label="URL de video (opcional)" value={lessonForm.video_content_url} onChange={(e) => setLessonForm({ ...lessonForm, video_content_url: e.target.value })} />
           <Input label="URL de archivo (opcional)" value={lessonForm.file_content_url} onChange={(e) => setLessonForm({ ...lessonForm, file_content_url: e.target.value })} />
           <Input label="Orden" type="number" min={0} value={lessonForm.order_index} onChange={(e) => setLessonForm({ ...lessonForm, order_index: Number(e.target.value) })} required />
+
+          {!editingLesson && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-neutral-700">Archivos adjuntos (opcional)</label>
+              <FileDropzone
+                multiple
+                disabled={lessonSubmitting}
+                onFiles={(files) => setPendingFiles((prev) => [...prev, ...files])}
+                hint="Se suben al guardar la lección · JPG, PNG, PDF, DOCX, PPTX, XLSX · máx. 50 MB por archivo"
+              />
+              {pendingFiles.length > 0 && (
+                <ul className="space-y-1">
+                  {pendingFiles.map((file, i) => (
+                    <li key={`${file.name}-${i}`} className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-neutral-800">{file.name}</p>
+                        <p className="text-xs text-neutral-400">{formatFileSize(file.size)}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPendingFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="rounded-lg p-1.5 text-neutral-400 hover:bg-danger-50 hover:text-danger-600 transition-colors"
+                        title="Quitar archivo"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setLessonModal(false)}>Cancelar</Button>
-            <Button type="submit" loading={createLesson.isPending || updateLesson.isPending}>{editingLesson ? 'Guardar' : 'Crear lección'}</Button>
+            <Button variant="secondary" type="button" onClick={() => { setLessonModal(false); setPendingFiles([]) }}>Cancelar</Button>
+            <Button type="submit" loading={createLesson.isPending || updateLesson.isPending || lessonSubmitting} disabled={lessonSubmitting}>
+              {editingLesson ? 'Guardar' : 'Crear lección'}
+            </Button>
           </div>
         </form>
       </Modal>
