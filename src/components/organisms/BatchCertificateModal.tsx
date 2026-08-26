@@ -5,6 +5,7 @@ import { useBatchIssueCertificates } from '../../hooks/useCertificates'
 import Modal from '../molecules/Modal'
 import Button from '../atoms/Button'
 import Input from '../atoms/Input'
+import { toLocalIsoDate } from '../../lib/dates'
 import { Search, CheckSquare, Square } from 'lucide-react'
 
 interface BatchCertificateModalProps {
@@ -77,7 +78,7 @@ export default function BatchCertificateModal({ userId, open, onClose }: BatchCe
       const res = await batchIssue.mutateAsync({
         user_id: userId,
         certificate_type_ids: Array.from(selectedIds),
-        issued_at: issuedAt || null,
+        issued_at: issuedAt ? toLocalIsoDate(issuedAt) : null,
         // Los overrides solo aplican a la emisión de un único tipo
         validity_extension: selectedIds.size === 1 ? (validityExtension ?? undefined) : undefined,
         hours: selectedIds.size === 1 ? (hours ?? undefined) : undefined,

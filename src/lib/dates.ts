@@ -8,3 +8,11 @@ export function formatDate(
   if (options?.withTime) return d.toLocaleString('es-CO')
   return d.toLocaleDateString('es-CO')
 }
+
+// Convierte "YYYY-MM-DD" de un <input type="date"> a ISO UTC anclando la
+// medianoche en la ZONA LOCAL del navegador. Sin esto, pydantic parsea la
+// fecha como medianoche UTC y los navegadores detrás de UTC (Colombia -5)
+// la renderizan un día antes.
+export function toLocalIsoDate(dateStr: string): string {
+  return new Date(`${dateStr}T00:00:00`).toISOString()
+}

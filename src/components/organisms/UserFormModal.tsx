@@ -92,6 +92,7 @@ export default function UserFormModal({ isOpen, onClose, user, roleOptions, isSa
         <Input
           label={user ? 'Contraseña (dejar vacío para mantener)' : 'Contraseña'}
           type="password"
+          minLength={8}
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
           required={!user}

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import { authService, setRefreshToken } from '../services/authService'
 import type { User } from '../types'
 
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('_uid')
       localStorage.removeItem('_role')
       setRefreshToken(null)
+      toast.info('Tu sesión ha expirado. Por favor inicia sesión de nuevo.')
       navigate('/login')
     }
     window.addEventListener('auth:redirect-login', onRedirectLogin)
@@ -85,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (role === 'teacher') {
         navigate('/courses')
       } else {
-        navigate('/dashboard')
+        navigate('/certificates')
       }
     },
     [navigate],

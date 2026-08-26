@@ -18,7 +18,7 @@ import RenewCertificateModal from '../components/organisms/RenewCertificateModal
 import EditCertificateStatusModal from '../components/organisms/EditCertificateStatusModal'
 import { Plus, Pencil, FileText, QrCode, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
 import { getErrorMessage } from '../lib/error'
-import { formatDate } from '../lib/dates'
+import { formatDate, toLocalIsoDate } from '../lib/dates'
 import { certificateStatusVariant } from '../lib/statusVariant'
 import { config } from '../config'
 import type { Certificate } from '../types'
@@ -143,7 +143,7 @@ export default function CertificatesPage() {
       await issueCert.mutateAsync({
         user_id: Number(selectedUserId),
         certificate_type_id: Number(selectedTypeId),
-        issued_at: issuedAt || undefined,
+        issued_at: issuedAt ? toLocalIsoDate(issuedAt) : undefined,
         validity_extension: validityExtension ?? undefined,
         hours: hours ?? undefined,
       })
