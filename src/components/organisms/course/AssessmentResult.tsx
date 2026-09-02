@@ -58,6 +58,16 @@ export default function AssessmentResult({ result, passingScore, onRetry, onBack
               <p className="text-xs text-neutral-500">
                 {a.is_correct ? 'Correcto' : 'Incorrecto'}
               </p>
+              {!a.is_correct && (
+                <div className="mt-1 space-y-0.5">
+                  {a.selected_option_text && (
+                    <p className="text-xs text-neutral-500">Tu respuesta: {a.selected_option_text}</p>
+                  )}
+                  {a.correct_option_text && (
+                    <p className="text-xs font-medium text-success-700">Respuesta correcta: {a.correct_option_text}</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         ))}
