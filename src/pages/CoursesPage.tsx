@@ -45,7 +45,7 @@ export default function CoursesPage() {
     { role: 'teacher', limit: 500 },
     { enabled: !!canManage },
   )
-  const { data: certTypes } = useCertificateTypes(undefined, { enabled: !!canManage })
+  const { data: certTypes } = useCertificateTypes({ limit: 2000 }, { enabled: !!canManage })
   const createCourse = useCreateCourse()
   const updateCourse = useUpdateCourse(editing?.id ?? 0)
 

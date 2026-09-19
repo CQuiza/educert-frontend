@@ -15,7 +15,7 @@ interface BatchCertificateModalProps {
 }
 
 export default function BatchCertificateModal({ userId, open, onClose }: BatchCertificateModalProps) {
-  const { data: certTypes } = useCertificateTypes()
+  const { data: certTypes } = useCertificateTypes({ limit: 2000 })
   const batchIssue = useBatchIssueCertificates()
 
   const [search, setSearch] = useState('')

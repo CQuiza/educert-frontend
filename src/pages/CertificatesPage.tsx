@@ -78,7 +78,7 @@ export default function CertificatesPage() {
     { skip: (page - 1) * PAGE_SIZE, limit: PAGE_SIZE, search: debouncedSearch || undefined },
     { enabled: !isAdmin },
   )
-  const { data: certTypes } = useCertificateTypes()
+  const { data: certTypes } = useCertificateTypes({ limit: 2000 })
   const issueCert = useIssueCertificate()
 
   const isLoading = isAdmin ? loadingCertified : loadingPlain

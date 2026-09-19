@@ -26,7 +26,7 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const { data: certTypes } = useCertificateTypes()
+  const { data: certTypes } = useCertificateTypes({ limit: 2000 })
   const typeMap = useMemo(() => {
     if (!certTypes) return {} as Record<number, string>
     return Object.fromEntries(certTypes.map((t) => [t.id, t.name]))

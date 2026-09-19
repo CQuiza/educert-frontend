@@ -35,7 +35,7 @@ export default function CertificateTypesPage() {
   const [editing, setEditing] = useState<CertificateType | null>(null)
   const [form, setForm] = useState<FormData>(emptyForm)
 
-  const { data: types, isLoading } = useCertificateTypes()
+  const { data: types, isLoading } = useCertificateTypes({ limit: 2000 })
   const createMutation = useCreateCertificateType()
   const updateMutation = useUpdateCertificateType(editing?.id ?? 0)
 
