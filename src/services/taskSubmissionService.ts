@@ -1,5 +1,6 @@
 import api from './api'
 import { config } from '../config'
+import { filenameFromContentDisposition } from '../lib/contentDisposition'
 import type { TaskSubmission, TaskSubmissionWithUser } from '../types'
 
 export const taskSubmissionService = {
@@ -30,8 +31,7 @@ export const taskSubmissionService = {
     if (!res.ok) throw new Error()
     const blob = await res.blob()
     const disposition = res.headers.get('content-disposition')
-    const match = disposition?.match(/filename="(.+)"/)
-    const fallback = match?.[1] ?? `submission-${submissionId}.pdf`
+    const fallback = filenameFromContentDisposition(disposition, `submission-${submissionId}.pdf`)
     const filename = preferredName ?? fallback
     const blobUrl = URL.createObjectURL(blob)
     const a = document.createElement('a')
